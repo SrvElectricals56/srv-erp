@@ -18,6 +18,7 @@ def execute():
 	today = nowdate()
 	_log(logger, "info", "Starting unused variant cleanup for stock balances through %s", today)
 	counts = {"deleted": 0, "disabled": 0, "protected": 0, "failed": 0, "invalid_template": 0}
+	item_logs = []
 	last_name = None
 	processed = 0
 
@@ -88,9 +89,18 @@ def execute():
 			has_stock = item.name in items_with_stock
 			if has_sales_order or has_stock:
 				chunk_counts["protected"] += 1
+				reasons = []
+				if has_sales_order:
+					reasons.append("linked to Sales Order")
+				if has_stock:
+					reasons.append("has nonzero stock")
+				item_logs.append((item.name, f"not deleted: {', '.join(reasons)}"))
+				_log_item_results(logger, item_logs)
 				continue
 
-			result = _delete_or_disable(item.name)
+			result = _delete_or_disable(item.name, item_logs)
+			frappe.db.commit()
+			_log_item_results(logger, item_logs)
 			chunk_counts[result] += 1
 
 		for key, value in chunk_counts.items():
@@ -102,13 +112,19 @@ def execute():
 	_log(logger, "info", "Unused variant cleanup complete: %s", counts)
 
 
+def _log_item_results(logger, item_logs):
+	for item_code, reason in sorted(item_logs, key=lambda entry: entry[0]):
+		_log(logger, "warning", "%s - %s", item_code, reason)
+	item_logs.clear()
+
+
 def _log(logger, level, message, *args):
 	formatted_message = message % args if args else message
 	getattr(logger, level)(message, *args)
 	print(formatted_message, flush=True)
 
 
-def _delete_or_disable(item_code):
+def _delete_or_disable(item_code, item_logs):
 	logger = frappe.logger("srv_erp.patches.disable_unwanted_varient")
 	savepoint = "unused_variant_cleanup"
 	frappe.db.savepoint(savepoint)
@@ -117,13 +133,9 @@ def _delete_or_disable(item_code):
 		return "deleted"
 	except Exception as delete_error:
 		delete_error_traceback = traceback.format_exc()
-		frappe.db.rollback(save_point=savepoint)
-		_log(
-			logger,
-			"warning",
-			"Could not delete Item %s: %s; attempting rename and disable fallback",
-			item_code,
-			delete_error,
+		delete_error_reason = _brief_error(delete_error)
+		_rollback_to_savepoint(
+			logger, item_code, savepoint, delete_error, item_logs, "delete attempt"
 		)
 
 	try:
@@ -143,16 +155,24 @@ def _delete_or_disable(item_code):
 		item = frappe.get_doc("Item", new_item_code)
 		item.disabled = 1
 		item.save(ignore_permissions=True)
+		item_logs.append(
+			(
+				item_code,
+				f"not deleted: {delete_error_reason}; renamed to {new_item_code} and disabled",
+			)
+		)
 		return "disabled"
 	except Exception as fallback_error:
-		frappe.db.rollback(save_point=savepoint)
 		fallback_error_traceback = traceback.format_exc()
-		_log(
-			logger,
-			"error",
-			"Could not rename and disable Item %s: %s",
-			item_code,
-			fallback_error,
+		_rollback_to_savepoint(
+			logger, item_code, savepoint, fallback_error, item_logs, "rename/disable attempt"
+		)
+		item_logs.append(
+			(
+				item_code,
+				f"not deleted: delete failed ({delete_error_reason}); "
+				f"rename/disable failed ({_brief_error(fallback_error)})",
+			)
 		)
 		frappe.log_error(
 			title=f"Could not delete or disable Item {item_code}",
@@ -164,3 +184,37 @@ def _delete_or_disable(item_code):
 			reference_name=item_code,
 		)
 		return "failed"
+
+
+def _brief_error(error, max_length=180):
+	message = " ".join(str(error).split())
+	reason = f"{type(error).__name__}: {message}"
+	if len(reason) > max_length:
+		return reason[: max_length - 3] + "..."
+	return reason
+
+
+def _rollback_to_savepoint(logger, item_code, savepoint, original_error, item_logs, operation):
+	try:
+		frappe.db.rollback(save_point=savepoint)
+	except Exception as savepoint_error:
+		try:
+			frappe.db.rollback()
+		except Exception as rollback_error:
+			_log(
+				logger,
+				"error",
+				"%s - full transaction rollback failed during %s: %s",
+				item_code,
+				operation,
+				rollback_error,
+			)
+			raise rollback_error from original_error
+		item_logs.append(
+			(
+				item_code,
+				f"full transaction rollback during {operation}; "
+				f"uncommitted changes since last commit were undone "
+				f"(savepoint rollback failed: {_brief_error(savepoint_error)})",
+			)
+		)
