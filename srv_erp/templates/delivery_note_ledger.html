@@ -2,9 +2,9 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<title>{{ _("Delivery Note Ledger") }}</title>
+	<title>{% if valuation %}{{ _("Delivery Note Valuation") }}{% else %}{{ _("Delivery Note Ledger") }}{% endif %}</title>
 	<style>
-		@page { size: A4 portrait; margin: 12mm 8mm; }
+		@page { size: A4 landscape; margin: 12mm 8mm; }
 		* { box-sizing: border-box; }
 		body { margin: 0; color: #111; font-family: Arial, sans-serif; font-size: 14px; }
 		.header { margin-bottom: 8px; text-align: center; }
@@ -13,12 +13,15 @@
 		table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 		th, td { border: 1px solid #777; padding: 4px 5px; vertical-align: top; }
 		th { background: #f2f2f2; font-size: 12.5px; text-align: center; }
-		.date { width: 9%; text-align: center; }
-		.particulars { width: 35%; overflow-wrap: anywhere; }
-		.quantity { width: 12%; text-align: right; }
-		.rate { width: 15%; text-align: right; }
-		.total { width: 14%; text-align: right; font-weight: 700; }
-		.grand-total-column { width: 15%; text-align: right; font-weight: 700; }
+		.date { width: 8%; text-align: center; }
+		.particulars { width: {% if valuation %}30%{% else %}24%{% endif %}; overflow-wrap: anywhere; }
+		.quantity { width: {% if valuation %}18%{% else %}10%{% endif %}; text-align: right; }
+		.conversion-factor { width: 12%; text-align: right; }
+		.stock-quantity { width: 12%; text-align: right; }
+		.discount { width: {% if valuation %}14%{% else %}12%{% endif %}; text-align: right; }
+		.rate { width: {% if valuation %}15%{% else %}12%{% endif %}; text-align: right; }
+		.total { width: {% if valuation %}15%{% else %}11%{% endif %}; text-align: right; font-weight: 700; }
+		.grand-total-column { width: 11%; text-align: right; font-weight: 700; }
 		.delivery-number { margin-top: 2px; line-height: 1.3; font-size: 12px; }
 		.customer-name { line-height: 1.3; font-weight: 700; }
 		.document-heading-cell { border-bottom: 1px dotted #bbb; }
@@ -37,18 +40,24 @@
 </head>
 <body>
 	<div class="header">
-		<h1>{{ _("Delivery Note Ledger") }}</h1>
+		<h1>{% if valuation %}{{ _("Delivery Note Valuation") }}{% else %}{{ _("Delivery Note Ledger") }}{% endif %}</h1>
 		{% if date_heading %}<div class="period">{{ _("For") }} {{ date_heading }}</div>{% endif %}
 	</div>
 	<table>
 		<thead>
 			<tr>
 				<th class="date">{{ _("Date") }}</th>
-				<th class="particulars">{{ _("Particulars") }}</th>
+				<th class="particulars">{% if valuation %}{{ _("Item Name") }}{% else %}{{ _("Particulars") }}{% endif %}</th>
+				{% if valuation %}
+				<th class="quantity">{{ _("Delivered Qty (in Stock UOM)") }}</th>
+				<th class="discount">{{ _("Discount Percentage") }}</th>
+				<th class="rate">{{ _("Rate (as per price list)") }}</th>
+				<th class="total">{{ _("Amount") }}</th>
+				{% else %}
 				<th class="quantity">{{ _("Delivered Quantity") }}</th>
-				<th class="rate">{{ _("Rate") }}</th>
-				<th class="total">{{ _("Gross Total") }}</th>
-				<th class="grand-total-column">{{ _("Delivery Note Total") }}</th>
+				<th class="conversion-factor">{{ _("UOM Conversion Value (Packing)") }}</th>
+				<th class="stock-quantity">{{ _("Qty in Stock UOM (PCs)") }}</th>
+				{% endif %}
 			</tr>
 		</thead>
 		<tbody>
@@ -62,21 +71,44 @@
 					<div class="delivery-number">{{ delivery_note.name }}</div>
 				</td>
 				<td class="quantity document-heading-cell"></td>
+				{% if valuation %}
+				<td class="discount document-heading-cell"></td>
 				<td class="rate document-heading-cell"></td>
-				<td class="total amount-cell document-cell number-cell" rowspan="{{ item_count + 1 }}">{{ frappe.utils.fmt_money(delivery_note.total, currency=delivery_note.currency) }}</td>
-				<td class="grand-total-column amount-cell document-cell number-cell" rowspan="{{ item_count + 1 }}">{{ frappe.utils.fmt_money(delivery_note.grand_total, currency=delivery_note.currency) }}</td>
+				<td class="total document-heading-cell"></td>
+				{% else %}
+				<td class="conversion-factor document-heading-cell"></td>
+				<td class="stock-quantity document-heading-cell"></td>
+				{% endif %}
 			</tr>
 			{% for item in delivery_note.items %}
 			<tr class="{% if loop.last %}document-last-item{% endif %}">
 				<td class="particulars item-cell">
-					<div>{{ item.item_code }}: {{ item.item_name or item.item_code }}</div>
+					<div>{% if valuation %}{{ item.item_name or item.item_code }}{% else %}{{ item.item_code }}: {{ item.item_name or item.item_code }}{% endif %}</div>
 				</td>
+				{% if valuation %}
+				<td class="quantity item-cell number-cell">
+					<div>{{ frappe.utils.fmt_money(item.stock_qty, precision=2) }} {{ item.stock_uom }}</div>
+				</td>
+				<td class="discount item-cell number-cell">
+					<div>{{ frappe.utils.fmt_money(valuation_items_by_note.get(delivery_note.name, {}).get(item.name, {}).get("discount_percentage", 0), precision=2) }}%</div>
+				</td>
+				<td class="rate item-cell number-cell">
+					<div>{{ frappe.utils.fmt_money(valuation_items_by_note.get(delivery_note.name, {}).get(item.name, {}).get("rate", item.price_list_rate), currency=delivery_note.currency) }}</div>
+				</td>
+				<td class="total item-cell number-cell">
+					<div>{{ frappe.utils.fmt_money(valuation_items_by_note.get(delivery_note.name, {}).get(item.name, {}).get("amount", item.amount), currency=delivery_note.currency) }}</div>
+				</td>
+				{% else %}
 				<td class="quantity item-cell number-cell">
 					<div>{{ frappe.utils.fmt_money(item.qty, precision=2) }} {{ item.uom or item.stock_uom }}</div>
 				</td>
-				<td class="rate item-cell number-cell">
-					<div>{{ frappe.utils.fmt_money(item.rate, currency=delivery_note.currency) }}/{{ item.uom or item.stock_uom }}</div>
+				<td class="conversion-factor item-cell number-cell">
+					<div>{{ frappe.utils.fmt_money(item.conversion_factor, precision=2) }}</div>
 				</td>
+				<td class="stock-quantity item-cell number-cell">
+					<div>{{ frappe.utils.fmt_money(item.stock_qty, precision=2) }} {{ item.stock_uom }}</div>
+				</td>
+				{% endif %}
 			</tr>
 			{% endfor %}
 			{% else %}
@@ -87,16 +119,21 @@
 					{% if delivery_note.customer_name %}<div class="customer-name">{{ delivery_note.customer_name }}</div>{% endif %}
 				</td>
 				<td class="quantity"></td>
+				{% if valuation %}
+				<td class="discount"></td>
 				<td class="rate"></td>
-				<td class="total amount-cell number-cell">{{ frappe.utils.fmt_money(delivery_note.total, currency=delivery_note.currency) }}</td>
-				<td class="grand-total-column amount-cell number-cell">{{ frappe.utils.fmt_money(delivery_note.grand_total, currency=delivery_note.currency) }}</td>
+				<td class="total"></td>
+				{% else %}
+				<td class="conversion-factor"></td>
+				<td class="stock-quantity"></td>
+				{% endif %}
 			</tr>
 			{% endif %}
 		{% endfor %}
-			<tr class="grand-total">
-				<td colspan="5" style="text-align:right">{{ _("Grand Total") }}</td>
+			<!-- <tr class="grand-total">
+				<td colspan="4" style="text-align:right">{{ _("Grand Total") }}</td>
 				<td class="grand-total-column number-cell">{{ frappe.utils.fmt_money(grand_total, currency=currency) }}</td>
-			</tr>
+			</tr> -->
 		</tbody>
 	</table>
 	<script>
