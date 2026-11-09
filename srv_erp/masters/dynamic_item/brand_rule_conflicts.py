@@ -7,6 +7,18 @@ import frappe
 from frappe.utils import now_datetime
 
 
+def delete_item_conflicts(doc, method=None):
+	"""Remove generated diagnostics before Frappe checks links on Item deletion."""
+	conflicts = frappe.get_all(
+		"Brand Variant Rule Conflict",
+		or_filters={"item_code": doc.name, "template_item": doc.name},
+		pluck="name",
+	)
+	for name in conflicts:
+		# Item delete permission authorizes cleanup of its generated diagnostics.
+		frappe.delete_doc("Brand Variant Rule Conflict", name, ignore_permissions=True)
+
+
 def audit_existing_variants(profile, configuration, revision, previous_configuration) -> int:
 	rules = {row["attribute"]: row for row in configuration.get("attributes", [])}
 	previous = {row["attribute"]: row for row in previous_configuration.get("attributes", [])}
