@@ -223,6 +223,7 @@ doc_events = {
 		],
 	},
 	"Item": {
+		"on_trash": ["srv_erp.masters.dynamic_item.brand_rule_conflicts.delete_item_conflicts"],
 		"before_insert": "srv_erp.masters.dynamic_item.guard.validate_dynamic_item_insert",
 		"validate": [
 			"srv_erp.item.variant_field_sync.validate_item_group_sync",
@@ -423,7 +424,7 @@ doc_events["Sales Order"]["validate"].append("srv_erp.oem_catalog.hooks.sales_or
 doc_events["Sales Order"]["on_update"] = "srv_erp.oem_catalog.adapters.pending_order_lines.persist_sources"
 
 doc_events["Item"]["validate"].append("srv_erp.oem_catalog.hooks.item.protect")
-doc_events["Item"]["on_trash"] = "srv_erp.oem_catalog.hooks.item.protect_delete"
+doc_events["Item"]["on_trash"].insert(0, "srv_erp.oem_catalog.hooks.item.protect_delete")
 for _oem_doctype in ("Delivery Note", "Sales Invoice", "Stock Entry", "Stock Reconciliation", "Purchase Receipt", "BOM", "Work Order", "Pick List"):
     _oem_events = doc_events.setdefault(_oem_doctype, {})
     _oem_validate = _oem_events.get("validate", [])
