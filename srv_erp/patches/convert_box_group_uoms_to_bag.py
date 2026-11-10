@@ -2,6 +2,8 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
+from srv_erp.package_barcode.service import get_package_barcode_conversion_factor
+
 
 def execute():
 	convert_item_uom_rows()
@@ -9,7 +11,7 @@ def execute():
 
 def convert_item_uom_rows():
 	groups = set()
-	for root in ("Concealed Box", "Fan Box"):
+	for root in ("Fan Box & Concealed", "Super Fan Rods"):
 		bounds = frappe.db.get_value("Item Group", root, ["lft", "rgt"], as_dict=True)
 		if bounds:
 			groups.update(
@@ -51,7 +53,8 @@ def convert_item_uom_rows():
 		else:
 			box[0].uom = "Bag"
 		changed.append(item)
-	if not changed:
+	barcodes = prepare_package_barcodes(items, changed)
+	if not changed and not barcodes:
 		return 0
 	if not frappe.db.exists("UOM", "Bag"):
 		frappe.get_doc({"doctype": "UOM", "uom_name": "Bag"}).insert(ignore_permissions=True)
@@ -62,4 +65,29 @@ def convert_item_uom_rows():
 		item.update_child_table("uoms")
 		frappe.db.set_value("Item", item.name, "modified", frappe.utils.now())
 		frappe.clear_document_cache("Item", item.name)
+	for name, factor in barcodes:
+		frappe.db.set_value("Package Barcode", name, {"uom": "Bag", "conversion_factor": factor})
+		frappe.clear_document_cache("Package Barcode", name)
 	return len(changed)
+
+
+def prepare_package_barcodes(items, changed_items):
+	"""Capture legacy factors before removing the Item's Box conversion row."""
+	changed = {item.name: item for item in changed_items}
+	barcodes = frappe.get_all(
+		"Package Barcode",
+		filters={"item_code": ["in", items], "uom": "Box"},
+		fields=["name", "barcode", "item_code", "conversion_factor"],
+	)
+	prepared = []
+	for row in barcodes:
+		item = changed.get(row.item_code) or frappe.get_doc("Item", row.item_code)
+		if not any(uom.uom == "Bag" for uom in item.uoms):
+			frappe.throw(_("Item {0} needs a Bag UOM row before converting its Package Barcodes.").format(item.name))
+		factor = get_package_barcode_conversion_factor(
+			row.barcode, row.item_code, "Box", row.conversion_factor
+		)
+		if factor <= 0:
+			frappe.throw(_("Package Barcode {0} needs a positive conversion factor before conversion.").format(row.name))
+		prepared.append((row.name, factor))
+	return prepared
