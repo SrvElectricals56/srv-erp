@@ -228,6 +228,7 @@ doc_events = {
 		"before_insert": "srv_erp.masters.dynamic_item.guard.validate_dynamic_item_insert",
 		"validate": [
 			"srv_erp.item.variant_field_sync.validate_item_group_sync",
+			"srv_erp.item.variant_uom_guard.validate_variant_uoms",
 			"srv_erp.production.setup.validate_item_supervisor",
 			"srv_erp.masters.dynamic_item.guard.protect_dynamic_item_state",
 			"srv_erp.item.variant_attribute_edit.sync_variant_signature",
