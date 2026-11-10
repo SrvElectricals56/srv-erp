@@ -234,6 +234,7 @@ doc_events = {
 		],
 	},
 	"Item": {
+		"before_validate": "srv_erp.item.variant_uom_sync.inherit_new_variant_uoms",
 		"on_trash": ["srv_erp.masters.dynamic_item.brand_rule_conflicts.delete_item_conflicts"],
 		"before_insert": "srv_erp.masters.dynamic_item.guard.validate_dynamic_item_insert",
 		"validate": [
@@ -244,6 +245,7 @@ doc_events = {
 		],
 		"on_update": [
 			"srv_erp.item.variant_field_sync.sync_template_item_group_to_variants",
+			"srv_erp.item.variant_uom_sync.sync_template_uoms",
 			"srv_erp.item.variant_price_sync.sync_prices_to_new_variant",
 		],
 	},
