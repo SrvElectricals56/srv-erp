@@ -16,10 +16,12 @@ class TestBoxGroupUOMConversion(unittest.TestCase):
 		for uom in ("Nos", "Box", "Bag"):
 			if not frappe.db.exists("UOM", uom):
 				frappe.get_doc({"doctype": "UOM", "uom_name": uom}).insert()
-		for root in ("Concealed Box", "Fan Box"):
+		if not frappe.db.exists("Item Group", "Fan Box & Concealed"):
+			self.group("Fan Box & Concealed", "All Item Groups")
+		for root in ("Concealed", "Fan Box"):
 			if not frappe.db.exists("Item Group", root):
-				self.group(root, "All Item Groups")
-		self.child = self.group(self.prefix + "-child", "Concealed Box")
+				self.group(root, "Fan Box & Concealed")
+		self.child = self.group(self.prefix + "-child", "Concealed")
 		self.grandchild = self.group(self.prefix + "-grandchild", self.child.name)
 		self.outside = self.group(self.prefix + "-Fan Box Accessories", "All Item Groups")
 
@@ -47,10 +49,11 @@ class TestBoxGroupUOMConversion(unittest.TestCase):
 		).insert()
 
 	def test_roots_descendants_templates_and_variants_are_converted(self):
-		template = self.item("-template", "Concealed Box", has_variants=1)
+		template = self.item("-template", "Concealed", has_variants=1)
 		items = [
 			template,
-			self.item("-variant", "Concealed Box", variant_of=template.name),
+			self.item("-variant", "Concealed", variant_of=template.name),
+			self.item("-parent", "Fan Box & Concealed"),
 			self.item("-fan", "Fan Box"),
 			self.item("-child", self.child.name),
 			self.item("-grandchild", self.grandchild.name),
@@ -68,6 +71,21 @@ class TestBoxGroupUOMConversion(unittest.TestCase):
 		outside.reload()
 		self.assertEqual(outside.uoms[1].uom, "Box")
 		self.assertEqual(convert_item_uom_rows(), 0)
+
+	def test_followup_patch_covers_previously_missed_concealed_group(self):
+		from srv_erp.patches.correct_box_bag_group_scope import execute
+
+		concealed = self.item("-previously-missed", "Concealed")
+		fan = self.item("-already-converted", "Fan Box")
+		fan.uoms[1].uom = "Bag"
+		fan.save()
+
+		execute()
+		concealed.reload()
+		fan.reload()
+		self.assertEqual(concealed.uoms[1].uom, "Bag")
+		self.assertEqual(fan.uoms[1].uom, "Bag")
+		self.assertEqual(fan.uoms[1].conversion_factor, 12)
 
 	def test_matching_bag_row_is_deduplicated(self):
 		item = self.item("-same", self.child.name)
