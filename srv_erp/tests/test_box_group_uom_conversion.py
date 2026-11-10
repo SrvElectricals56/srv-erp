@@ -18,6 +18,8 @@ class TestBoxGroupUOMConversion(unittest.TestCase):
 				frappe.get_doc({"doctype": "UOM", "uom_name": uom}).insert()
 		if not frappe.db.exists("Item Group", "Fan Box & Concealed"):
 			self.group("Fan Box & Concealed", "All Item Groups")
+		if not frappe.db.exists("Item Group", "Super Fan Rods"):
+			self.group("Super Fan Rods", "All Item Groups")
 		for root in ("Concealed", "Fan Box"):
 			if not frappe.db.exists("Item Group", root):
 				self.group(root, "Fan Box & Concealed")
@@ -188,3 +190,18 @@ class TestBoxGroupUOMConversion(unittest.TestCase):
 		barcode.reload()
 		self.assertEqual(item.uoms[1].uom, "Box")
 		self.assertEqual(barcode.uom, "Box")
+
+	def test_super_fan_rods_and_descendants_include_items_and_package_barcodes(self):
+		child = self.group(self.prefix + "-rods-child", "Super Fan Rods")
+		root_item = self.item("-rods-root", "Super Fan Rods")
+		child_item = self.item("-rods-child", child.name)
+		barcodes = [self.barcode("-rods-barcode", root_item), self.barcode("-rods-child-barcode", child_item)]
+
+		self.assertEqual(convert_item_uom_rows(), 2)
+
+		for item in (root_item, child_item):
+			item.reload()
+			self.assertEqual((item.uoms[1].uom, item.uoms[1].conversion_factor), ("Bag", 12))
+		for barcode in barcodes:
+			barcode.reload()
+			self.assertEqual((barcode.uom, barcode.conversion_factor), ("Bag", 12))

@@ -11,7 +11,7 @@ def execute():
 
 def convert_item_uom_rows():
 	groups = set()
-	for root in ("Fan Box & Concealed",):
+	for root in ("Fan Box & Concealed", "Super Fan Rods"):
 		bounds = frappe.db.get_value("Item Group", root, ["lft", "rgt"], as_dict=True)
 		if bounds:
 			groups.update(
