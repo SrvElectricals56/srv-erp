@@ -112,3 +112,79 @@ class TestBoxGroupUOMConversion(unittest.TestCase):
 		item.reload()
 		self.assertEqual(item.sales_uom, "Box")
 		self.assertEqual(item.uoms[1].uom, "Box")
+
+	def barcode(self, suffix, item, factor=12, **fields):
+		return frappe.get_doc(
+			{
+				"doctype": "Package Barcode",
+				"barcode": self.prefix + suffix,
+				"item_code": item.name,
+				"uom": "Box",
+				"conversion_factor": factor,
+				**fields,
+			}
+		).insert()
+
+	def test_package_barcodes_follow_group_scope_and_keep_printed_codes_and_factors(self):
+		item = self.item("-barcode", self.grandchild.name)
+		outside = self.item("-outside-barcode", self.outside.name)
+		barcode = self.barcode("-printed-7PKG", item, factor=7)
+		disabled = self.barcode("-disabled", item, factor=9, status="Disabled")
+		untouched = self.barcode("-outside-printed", outside)
+		original_code = barcode.barcode
+
+		convert_item_uom_rows()
+
+		barcode.reload()
+		disabled.reload()
+		untouched.reload()
+		self.assertEqual((barcode.name, barcode.barcode), (original_code, original_code))
+		self.assertEqual((barcode.uom, barcode.conversion_factor), ("Bag", 7))
+		self.assertEqual((disabled.uom, disabled.conversion_factor, disabled.status), ("Bag", 9, "Disabled"))
+		self.assertEqual(untouched.uom, "Box")
+		from srv_erp.package_barcode.api import scan_package_barcode
+
+		result = scan_package_barcode(original_code)
+		self.assertEqual((result["uom"], result["conversion_factor"]), ("Bag", 7))
+		modified = barcode.modified
+		convert_item_uom_rows()
+		barcode.reload()
+		self.assertEqual(barcode.modified, modified)
+
+	def test_legacy_barcode_factor_is_captured_before_item_box_row_is_removed(self):
+		item = self.item("-legacy-barcode", self.child.name)
+		legacy = self.barcode("-legacy-printed", item, factor=0)
+		encoded = self.barcode("-encoded-5PKG", item, factor=0)
+
+		convert_item_uom_rows()
+
+		legacy.reload()
+		encoded.reload()
+		self.assertEqual((legacy.uom, legacy.conversion_factor), ("Bag", 12))
+		self.assertEqual((encoded.uom, encoded.conversion_factor), ("Bag", 5))
+
+	def test_package_barcodes_are_updated_when_item_was_already_converted(self):
+		item = self.item("-converted", "Fan Box")
+		item.uoms[1].uom = "Bag"
+		item.save()
+		barcode = self.barcode("-old-master", item)
+
+		self.assertEqual(convert_item_uom_rows(), 0)
+
+		barcode.reload()
+		self.assertEqual((barcode.uom, barcode.conversion_factor), ("Bag", 12))
+
+	def test_package_barcode_preflight_failure_leaves_item_rows_unchanged(self):
+		item = self.item("-preflight", self.child.name)
+		invalid = self.item("-no-bag", "Fan Box")
+		invalid.remove(invalid.uoms[1])
+		invalid.save()
+		barcode = self.barcode("-unconfigured", invalid)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "needs a Bag UOM row"):
+			convert_item_uom_rows()
+
+		item.reload()
+		barcode.reload()
+		self.assertEqual(item.uoms[1].uom, "Box")
+		self.assertEqual(barcode.uom, "Box")
