@@ -55,9 +55,13 @@ is disabled in development because copied OTP secrets were removed.
 
 The scheduler process is deliberately absent. A worker remains available for
 development background tasks. `start-app.sh` checks database isolation before
-every web, worker and realtime startup. It also removes only a stale realtime
-Unix socket after a restart. `sanitize.py` refuses nonlocal database or shared
-Redis endpoints; without `--apply` it performs read-only verification.
+every web, worker and realtime startup. If a migration or restore reintroduces
+production secrets, it applies sanitization automatically under a lock instead
+of leaving the site down with a 502; the repair is serialized so the web, worker
+and realtime processes cannot sanitize concurrently. It also removes only a
+stale realtime Unix socket after a restart. `sanitize.py` refuses nonlocal
+database or shared Redis endpoints; without `--apply` it performs read-only
+verification.
 
 Development mode and tests are enabled. The app title identifies DEVELOPMENT;
 Nginx adds a development response header and asks search engines not to index
@@ -140,7 +144,8 @@ bench --site deverp.srvelectricals.in clear-cache
 ```
 
 Migration may recreate scheduled-job records, so rerun sanitization before
-restarting. Framework schema annotations may change files in this development
+restarting; `start-app.sh` also applies it automatically if verification still
+fails. Framework schema annotations may change files in this development
 checkout during migration; inspect the diff and keep app changes focused.
 Promote reviewed work from `dev` to `version-15` through a separate production
 PR. The development setup does not deploy to production.
