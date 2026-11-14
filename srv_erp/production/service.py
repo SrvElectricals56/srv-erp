@@ -18,7 +18,7 @@ WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 def positive_qty(value, context=None):
 	try:
 		number = float(value)
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		number = 0
 	if not math.isfinite(number) or flt(number, 6) <= 0:
 		frappe.throw(
@@ -59,7 +59,7 @@ def schedule_dates(doc, start_date=None):
 def planning_date(value, label, context):
 	try:
 		return date.fromisoformat(str(value))
-	except ValueError, TypeError:
+	except (ValueError, TypeError):
 		frappe.throw(
 			_("{0}: {1} must be a valid date (YYYY-MM-DD); received {2}.").format(
 				context, label, escape_html(str(value or "blank"))

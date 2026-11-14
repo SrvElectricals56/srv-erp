@@ -85,7 +85,7 @@ def update_plan(schedule, rows, reason):
 		seen.add(row["name"])
 		try:
 			index = int(row.get("row_number", index))
-		except TypeError, ValueError:
+		except (TypeError, ValueError):
 			frappe.throw(_("Invalid dated plan row number."))
 		if frappe.db.get_value(ASSIGNMENT, row["name"], "schedule") != schedule:
 			frappe.throw(
@@ -107,7 +107,7 @@ def update_plan(schedule, rows, reason):
 		assignment.check_permission("write")
 		try:
 			fresh = get_datetime(row.get("modified")) == get_datetime(assignment.modified)
-		except TypeError, ValueError:
+		except (TypeError, ValueError):
 			fresh = False
 		completed = submitted_qty(assignment.name)
 		if not row.get("modified") or not fresh or flt(row.get("completed_qty"), 6) != completed:
