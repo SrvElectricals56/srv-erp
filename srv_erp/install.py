@@ -18,6 +18,7 @@ from srv_erp.selling.sales_order_attributes import create_sales_order_attribute_
 from srv_erp.selling.sales_order_discount import set_sales_order_item_discount_grid_columns
 from srv_erp.selling.sales_order_item_approval_setup import setup_sales_order_item_approval
 from srv_erp.selling.sales_order_ui import (
+	configure_sales_order_note_fields,
 	configure_sales_order_current_stock_field,
 	configure_sales_order_pending_qty_field,
 	set_sales_order_ui_defaults,
@@ -25,6 +26,7 @@ from srv_erp.selling.sales_order_ui import (
 from srv_erp.selling.sales_person_user_mapping import sync_all_sales_person_user_permissions
 from srv_erp.stock.stock_balance_report import use_srv_stock_balance_report
 from srv_erp.tree_group_filters import configure_tree_group_list_filters
+from srv_erp.workspace import ensure_home_workspace_shortcuts
 
 
 def before_migrate():
@@ -48,6 +50,7 @@ def after_install():
 	configure_tree_group_list_filters()
 	set_sales_order_item_discount_grid_columns()
 	set_sales_order_ui_defaults()
+	configure_sales_order_note_fields()
 	configure_sales_order_pending_qty_field()
 	configure_sales_order_current_stock_field()
 	sync_all_sales_person_user_permissions()
@@ -56,6 +59,7 @@ def after_install():
 	set_srv_settings_defaults()
 	setup_sales_order_item_approval()
 	sync_brand_master_values_to_attribute()
+	ensure_home_workspace_shortcuts()
 
 
 def after_migrate():
@@ -73,6 +77,7 @@ def after_migrate():
 	configure_tree_group_list_filters()
 	set_sales_order_item_discount_grid_columns()
 	set_sales_order_ui_defaults()
+	configure_sales_order_note_fields()
 	configure_sales_order_pending_qty_field()
 	configure_sales_order_current_stock_field()
 	sync_all_sales_person_user_permissions()
@@ -83,6 +88,7 @@ def after_migrate():
 	setup_sales_order_item_approval()
 	sync_brand_master_values_to_attribute()
 	migrate_production_items()
+	ensure_home_workspace_shortcuts()
 
 
 def create_brand_custom_fields():
