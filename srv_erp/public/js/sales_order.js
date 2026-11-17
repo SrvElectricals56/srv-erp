@@ -607,6 +607,15 @@ function refresh_sales_order_delivery_indicator(frm) {
 }
 
 
+function setup_sales_order_productivity_actions(frm) {
+	frm.add_custom_button(
+		__("Quick Item"),
+		() => window.srv_erp_shortcuts?.create_item(frm),
+		__("Create")
+	);
+}
+
+
 function get_items_requiring_approval(frm) {
 	return (frm.doc.items || [])
 		.filter((row) => cint(row.custom_item_requires_approval))
@@ -698,6 +707,7 @@ frappe.ui.form.on("Sales Order", {
 		copy_discount_to_items(frm);
 	},
 	refresh(frm) {
+		setup_sales_order_productivity_actions(frm);
 		refresh_closed_sales_order_indicator(frm);
 		refresh_sales_order_item_approval_indicator(frm);
 		refresh_sales_order_delivery_indicator(frm);

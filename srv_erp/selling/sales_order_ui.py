@@ -6,6 +6,8 @@ SHOW_PENDING_QTY_SETTING = "show_pending_qty_in_sales_order"
 PENDING_QTY_FIELD = "srv_pending_qty"
 SHOW_CURRENT_STOCK_SETTING = "show_current_stock_in_sales_order"
 CURRENT_STOCK_FIELD = "srv_current_stock"
+NARRATION_FIELD = "srv_narration"
+DESCRIPTION_FIELD = "srv_description"
 
 
 def set_sales_order_ui_defaults():
@@ -13,6 +15,37 @@ def set_sales_order_ui_defaults():
 		frappe.db.set_single_value("SRV Settings", SHOW_PENDING_QTY_SETTING, 1)
 	if frappe.db.get_single_value("SRV Settings", SHOW_CURRENT_STOCK_SETTING) is None:
 		frappe.db.set_single_value("SRV Settings", SHOW_CURRENT_STOCK_SETTING, 0)
+
+
+def configure_sales_order_note_fields():
+	"""Add user-facing narration and description boxes below the item table."""
+	create_custom_fields(
+		{
+			"Sales Order": [
+				{
+					"collapsible": 1,
+					"fieldname": "srv_order_notes_section",
+					"fieldtype": "Section Break",
+					"insert_after": "items",
+					"label": "Order Notes",
+				},
+				{
+					"fieldname": NARRATION_FIELD,
+					"fieldtype": "Small Text",
+					"insert_after": "srv_order_notes_section",
+					"label": "Narration",
+				},
+				{
+					"fieldname": DESCRIPTION_FIELD,
+					"fieldtype": "Text Editor",
+					"insert_after": NARRATION_FIELD,
+					"label": "Description",
+				},
+			]
+		},
+		update=True,
+	)
+	frappe.clear_cache(doctype="Sales Order")
 
 
 def configure_sales_order_pending_qty_field(enabled=None):
