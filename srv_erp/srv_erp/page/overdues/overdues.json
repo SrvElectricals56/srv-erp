@@ -1,0 +1,9 @@
+{
+ "doctype": "Page",
+ "module": "Srv Erp",
+ "name": "overdues",
+ "page_name": "overdues",
+ "title": "Overdues",
+ "standard": "Yes",
+ "roles": [{"role": "Accounts Manager"}, {"role": "Accounts User"}]
+}

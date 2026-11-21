@@ -1,0 +1,117 @@
+/* Shared Desk presentation for both Smart DSR portals. Frappe owns the palette. */
+:root {
+	--dsr-bg: var(--bg-color, #fff);
+	--dsr-text: var(--text-color, #383838);
+	--dsr-muted: var(--text-muted, #7c7c7c);
+	--dsr-border: var(--border-color, #ededed);
+	--dsr-primary: var(--btn-primary, #171717);
+}
+body { background: var(--dsr-bg); color: var(--dsr-text); }
+:is(#smart-dsr, #dsr-admin) { font: var(--text-base, 14px)/1.5 var(--font-stack, Inter, sans-serif); }
+:is(#smart-dsr, #dsr-admin) h1 { color: var(--heading-color); font-size: 24px; font-weight: 600; letter-spacing: -.4px; }
+:is(#smart-dsr, #dsr-admin) h2 { color: var(--heading-color); font-size: 16px; font-weight: 600; }
+:is(#smart-dsr, #dsr-admin) h3 { color: var(--heading-color); font-size: 14px; font-weight: 600; }
+:is(#smart-dsr, #dsr-admin) .eyebrow { font-size: 12px; letter-spacing: 0; font-weight: 400; margin-bottom: 6px; }
+:is(#smart-dsr, #dsr-admin) .panel,
+:is(#smart-dsr, #dsr-admin) .metric,
+#dsr-admin .admin-metrics section {
+	background: var(--card-bg); border: 1px solid var(--dsr-border);
+	border-radius: var(--border-radius-lg, 12px); box-shadow: var(--card-shadow);
+}
+:is(#smart-dsr, #dsr-admin) .panel { padding: 20px; margin-bottom: 20px; }
+:is(#smart-dsr, #dsr-admin) .section-title { margin-bottom: 16px; }
+:is(#smart-dsr, #dsr-admin) button,
+#smart-dsr .button {
+	background: var(--btn-default-bg); color: var(--text-color);
+	border: 1px solid transparent; border-radius: var(--border-radius, 6px);
+	padding: 5px 12px; min-height: 30px; font-size: 13px; font-weight: 500;
+	box-shadow: none; line-height: 1.5;
+}
+:is(#smart-dsr, #dsr-admin) button:hover,
+#smart-dsr .button:hover { background: var(--btn-default-hover-bg); border-color: transparent; }
+:is(#smart-dsr, #dsr-admin) .primary,
+#smart-dsr button.dsr-camera-shutter {
+	background: var(--btn-primary); color: var(--neutral); border-color: transparent;
+}
+:is(#smart-dsr, #dsr-admin) .primary:hover,
+#smart-dsr button.dsr-camera-shutter:hover { background: var(--btn-primary); filter: brightness(.9); }
+#smart-dsr .danger { background: var(--bg-red); color: var(--text-on-red); border-color: transparent; }
+:is(#smart-dsr, #dsr-admin) button:focus-visible,
+:is(#smart-dsr, #dsr-admin) a:focus-visible { outline: 2px solid var(--text-muted); outline-offset: 3px; }
+:is(#smart-dsr, #dsr-admin) label { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+:is(#smart-dsr, #dsr-admin) input:not([type="checkbox"]):not([type="radio"]),
+:is(#smart-dsr, #dsr-admin) select,
+:is(#smart-dsr, #dsr-admin) textarea {
+	background: var(--control-bg); color: var(--text-color); border: 1px solid transparent;
+	border-radius: var(--border-radius, 6px); padding: 6px 10px; font-size: 13px; min-height: 32px;
+}
+:is(#smart-dsr, #dsr-admin) input::placeholder,
+:is(#smart-dsr, #dsr-admin) textarea::placeholder { color: var(--text-muted); opacity: 1; }
+:is(#smart-dsr, #dsr-admin) input:focus,
+:is(#smart-dsr, #dsr-admin) select:focus,
+:is(#smart-dsr, #dsr-admin) textarea:focus {
+	outline: none; border-color: var(--gray-500); box-shadow: 0 0 0 2px var(--control-bg);
+}
+:is(#smart-dsr, #dsr-admin) input:disabled,
+:is(#smart-dsr, #dsr-admin) select:disabled { background: var(--disabled-control-bg); color: var(--disabled-text-color); }
+:is(#smart-dsr, #dsr-admin) input[type="checkbox"] { accent-color: var(--checkbox-color); }
+:is(#smart-dsr, #dsr-admin) fieldset { border-color: var(--border-color); border-radius: var(--border-radius); }
+:is(#smart-dsr, #dsr-admin) legend { color: var(--heading-color); font-weight: 500; }
+:is(#smart-dsr, #dsr-admin) table { font-size: 13px; }
+:is(#smart-dsr, #dsr-admin) th { background: var(--subtle-accent); color: var(--text-muted); font-weight: 500; font-size: 12px; }
+:is(#smart-dsr, #dsr-admin) td,
+:is(#smart-dsr, #dsr-admin) th { padding: 10px 12px; border-bottom-color: var(--table-border-color); }
+:is(#smart-dsr, #dsr-admin) tbody tr:hover { background: var(--fg-hover-color); }
+:is(#smart-dsr, #dsr-admin) .table-scroll { border: 1px solid var(--border-color); border-radius: var(--border-radius); }
+:is(#smart-dsr, #dsr-admin) table tr:last-child td { border-bottom: 0; }
+#smart-dsr .dsr-header { background: var(--navbar-bg); padding: 10px 32px; min-height: 60px; }
+#smart-dsr .brand { font-size: 14px; font-weight: 600; }
+#smart-dsr .brand-mark,
+#dsr-admin .admin-brand b { background: var(--control-bg); color: var(--heading-color); font-size: 14px; letter-spacing: 0; border-radius: 8px; }
+#smart-dsr .dsr-main { max-width: 1440px; padding: 24px 32px; }
+#smart-dsr .page-intro { margin-bottom: 20px; }
+#smart-dsr .badge { border-radius: 6px; background: var(--bg-gray); color: var(--text-on-gray); font-size: 12px; padding: 3px 8px; font-weight: 500; }
+#smart-dsr .badge.success { background: var(--bg-green); color: var(--text-on-green); }
+#smart-dsr .badge.pending { background: var(--bg-orange); color: var(--text-on-orange); }
+#smart-dsr .reward-balance { background: var(--control-bg); color: var(--text-color); border-color: transparent; border-radius: 8px; }
+#smart-dsr .reward-balance strong { font-size: 22px; }
+#smart-dsr .subpanel,
+#dsr-admin .detail-grid > div { background: var(--subtle-accent); border-color: var(--border-color); border-radius: 8px; }
+#smart-dsr .business-icon { color: var(--text-muted); }
+#smart-dsr .dsr-camera-shutter span { box-shadow: none; }
+#smart-dsr .location-required { border-width: 1px; font-size: 13px; }
+#smart-dsr .location-required strong { font-size: 14px; }
+#dsr-admin .admin-sidebar { background: var(--bg-color); border-right-color: var(--border-color); padding: 24px 12px; }
+#dsr-admin .admin-brand { padding: 0 8px; margin-bottom: 24px; }
+#dsr-admin .admin-sidebar nav { gap: 3px; }
+#dsr-admin .admin-sidebar nav a { min-height: 32px; padding: 6px 12px; color: var(--text-color) !important; font-size: 13px; }
+#dsr-admin .admin-sidebar nav a:hover { background: var(--fg-hover-color); }
+#dsr-admin .admin-sidebar nav a.active { background: var(--sidebar-select-color); color: var(--text-color) !important; font-weight: 500; }
+#dsr-admin .back-link { font-size: 13px; padding-left: 12px; }
+#dsr-admin .admin-content { padding: 24px 32px; }
+#dsr-admin .admin-content header { padding-bottom: 16px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; }
+#dsr-admin .admin-content header > span { color: var(--text-muted); font-size: 12px; }
+:is(#smart-dsr, #dsr-admin) dialog {
+	background: var(--modal-bg); color: var(--text-color); border-color: var(--border-color);
+	border-radius: var(--border-radius-lg, 12px); box-shadow: var(--modal-shadow); padding: 24px;
+}
+:is(#smart-dsr, #dsr-admin) dialog .section-title { border-bottom: 1px solid var(--border-color); padding-bottom: 16px; }
+#dsr-admin #admin-message { background: var(--alert-bg-info); color: var(--alert-text-info); border-color: var(--border-color); }
+#dsr-admin #dialog-error { background: var(--alert-bg-danger); color: var(--alert-text-danger); border-color: var(--error-border); }
+#dsr-admin .dsr-route-section { border-radius: 8px; }
+@media (max-width: 900px) {
+	#dsr-admin .admin-content { padding: 20px 16px; }
+	#dsr-admin .admin-sidebar { padding: 16px 12px; }
+}
+@media (max-width: 700px) {
+	#smart-dsr .dsr-header { padding: 14px 16px; }
+	#smart-dsr .dsr-main { padding: 20px 12px; }
+	:is(#smart-dsr, #dsr-admin) .panel { padding: 16px; }
+	:is(#smart-dsr, #dsr-admin) button,
+	#smart-dsr .button,
+	#dsr-admin .admin-sidebar nav a { min-height: 44px; }
+	:is(#smart-dsr, #dsr-admin) input:not([type="checkbox"]):not([type="radio"]),
+	:is(#smart-dsr, #dsr-admin) select,
+	:is(#smart-dsr, #dsr-admin) textarea { font-size: 16px; min-height: 44px; }
+	:is(#smart-dsr, #dsr-admin) dialog { padding: 16px; }
+}

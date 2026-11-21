@@ -1,0 +1,17 @@
+{% extends "templates/web.html" %}
+{% block title %}Smart DSR Administrator · SRV Electricals{% endblock %}
+{% block head_include %}
+{% include "srv_erp/templates/includes/smart_dsr_theme.html" %}
+
+<link rel="stylesheet" href="/assets/frappe/js/lib/leaflet/leaflet.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/assets/srv_erp/smart_dsr/admin.css?v=admin-section-reports-20261120">
+<link rel="stylesheet" href="/assets/srv_erp/smart_dsr/frappe-theme.css?v=20261119-1">
+{% endblock %}
+{% block page_content %}
+<div id="dsr-admin"><p class="loading">Loading Administrator Control Panel…</p></div>
+<script>window.dsr_admin_csrf = {{ smart_dsr_csrf_token | tojson }};</script>
+<script src="/assets/frappe/js/lib/leaflet/leaflet.js" defer></script>
+<script src="/assets/srv_erp/smart_dsr/route-map.js?v=short-dates-20261120" defer></script>
+<script src="/assets/srv_erp/smart_dsr/admin.js?v=admin-section-reports-20261120" defer></script>
+{% endblock %}

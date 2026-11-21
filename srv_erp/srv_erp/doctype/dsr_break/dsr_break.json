@@ -1,0 +1,109 @@
+{
+ "doctype": "DocType",
+ "name": "DSR Break",
+ "module": "Srv Erp",
+ "autoname": "hash",
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "field_order": [
+  "account",
+  "employee",
+  "duty",
+  "break_type",
+  "started_at",
+  "ended_at",
+  "duration_minutes",
+  "allowance",
+  "meal_key",
+  "request_key"
+ ],
+ "fields": [
+  {
+   "fieldname": "account",
+   "label": "User Account",
+   "fieldtype": "Link",
+   "options": "User",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "employee",
+   "label": "Employee",
+   "fieldtype": "Link",
+   "reqd": 0,
+   "options": "Employee",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "duty",
+   "label": "Duty",
+   "fieldtype": "Link",
+   "options": "DSR Duty Session"
+  },
+  {
+   "fieldname": "break_type",
+   "label": "Break Type",
+   "fieldtype": "Select",
+   "options": "Breakfast\nLunch\nDinner\nTea"
+  },
+  {
+   "fieldname": "started_at",
+   "label": "Started At",
+   "fieldtype": "Datetime"
+  },
+  {
+   "fieldname": "ended_at",
+   "label": "Ended At",
+   "fieldtype": "Datetime"
+  },
+  {
+   "fieldname": "duration_minutes",
+   "label": "Duration Minutes",
+   "fieldtype": "Float"
+  },
+  {
+   "fieldname": "allowance",
+   "label": "Allowance",
+   "fieldtype": "Currency"
+  },
+  {
+   "fieldname": "meal_key",
+   "label": "Meal Key",
+   "fieldtype": "Data",
+   "unique": 1
+  },
+  {
+   "fieldname": "request_key",
+   "label": "Request Key",
+   "fieldtype": "Data",
+   "unique": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "report": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "Sales Rapl",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "All",
+   "read": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC"
+}

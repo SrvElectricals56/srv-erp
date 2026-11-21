@@ -1,0 +1,137 @@
+{
+ "doctype": "DocType",
+ "name": "DSR Admin Audit",
+ "module": "Srv Erp",
+ "autoname": "hash",
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "field_order": [
+  "actor",
+  "affected_user",
+  "employee",
+  "record_type",
+  "record_id",
+  "action",
+  "original_value",
+  "updated_value",
+  "reason",
+  "recorded_at",
+  "transaction_type",
+  "transaction_id",
+  "request_key",
+  "outcome"
+ ],
+ "fields": [
+  {
+   "fieldname": "actor",
+   "label": "Actor",
+   "fieldtype": "Link",
+   "read_only": 1,
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "affected_user",
+   "label": "Affected User",
+   "fieldtype": "Link",
+   "read_only": 1,
+   "options": "User"
+  },
+  {
+   "fieldname": "employee",
+   "label": "Employee",
+   "fieldtype": "Link",
+   "read_only": 1,
+   "options": "Employee"
+  },
+  {
+   "fieldname": "record_type",
+   "label": "Record Type",
+   "fieldtype": "Data",
+   "read_only": 1
+  },
+  {
+   "fieldname": "record_id",
+   "label": "Record Id",
+   "fieldtype": "Data",
+   "read_only": 1
+  },
+  {
+   "fieldname": "action",
+   "label": "Action",
+   "fieldtype": "Data",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "original_value",
+   "label": "Original Value",
+   "fieldtype": "Long Text",
+   "read_only": 1
+  },
+  {
+   "fieldname": "updated_value",
+   "label": "Updated Value",
+   "fieldtype": "Long Text",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reason",
+   "label": "Reason",
+   "fieldtype": "Small Text",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "recorded_at",
+   "label": "Recorded At",
+   "fieldtype": "Datetime",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "transaction_type",
+   "label": "Transaction Type",
+   "fieldtype": "Data",
+   "read_only": 1
+  },
+  {
+   "fieldname": "transaction_id",
+   "label": "Transaction Id",
+   "fieldtype": "Data",
+   "read_only": 1
+  },
+  {
+   "fieldname": "request_key",
+   "label": "Request Key",
+   "fieldtype": "Data",
+   "read_only": 1,
+   "unique": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "outcome",
+   "label": "Outcome",
+   "fieldtype": "Data",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "Smart DSR Administrator",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  },
+  {
+   "role": "Smart DSR Financial Administrator",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "recorded_at",
+ "sort_order": "DESC"
+}
