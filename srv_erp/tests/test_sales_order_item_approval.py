@@ -25,6 +25,7 @@ from srv_erp.selling.sales_order_item_approval import (
 	mark_items_requiring_approval,
 	normalize_sales_order_workflow_state,
 	validate_sales_order_item_approval_submission,
+	validate_sales_order_brand_approval,
 	validate_sales_order_item_history,
 )
 from srv_erp.selling.sales_order_item_approval_setup import (
@@ -32,6 +33,7 @@ from srv_erp.selling.sales_order_item_approval_setup import (
 	ACTION_CANCEL,
 	ACTION_REJECT,
 	ACTION_SEND_FOR_APPROVAL,
+	ACTION_SUBMIT,
 	STATE_APPROVED,
 	STATE_CANCELLED,
 	STATE_PENDING,
@@ -293,6 +295,34 @@ class TestSalesOrderItemApproval(TestCase):
 		frappe_mock.throw.assert_not_called()
 
 
+class TestSalesOrderBrandApproval(TestCase):
+	@patch("srv_erp.selling.sales_order_item_approval._", side_effect=lambda value: value)
+	@patch("srv_erp.selling.sales_order_item_approval.frappe")
+	def test_other_brands_cannot_bypass_approval_with_item_flag(self, mocked, translate):
+		mocked.throw.side_effect = frappe.PermissionError
+		for user in ("sales@example.test", "manager@example.test"):
+			mocked.session.user = user
+			with self.subTest(user=user), self.assertRaises(frappe.PermissionError):
+				validate_sales_order_brand_approval(FakeDoc(
+					brand_filter="Other Brand", custom_sales_order_item_approved=1,
+				))
+
+	@patch("srv_erp.selling.sales_order_item_approval.frappe")
+	def test_administrator_can_submit_other_brands(self, mocked):
+		mocked.session.user = "Administrator"
+		validate_sales_order_brand_approval(FakeDoc(brand_filter="Other Brand"))
+		mocked.throw.assert_not_called()
+
+	@patch("srv_erp.selling.sales_order_item_approval.frappe")
+	def test_srv_can_submit_new_items_without_review(self, mocked):
+		mocked.session.user = "sales@example.test"
+		doc = FakeDoc(brand_filter="SRV", customer="CUST-1", items=[{"item_code": "NEW-ITEM"}])
+		validate_sales_order_brand_approval(doc)
+		validate_sales_order_item_approval_submission(doc)
+		mocked.throw.assert_not_called()
+		mocked.db.sql.assert_not_called()
+
+
 class TestSalesOrderItemApprovalWorkflowDefinition(TestCase):
 	def test_workflow_uses_configured_approver_role(self):
 		workflow = build_sales_order_item_approval_workflow("Special Approver")
@@ -316,8 +346,7 @@ class TestSalesOrderItemApprovalWorkflowDefinition(TestCase):
 			transition = next(t for t in workflow["transitions"] if t["action"] == action)
 			self.assertEqual(transition["allow_self_approval"], 0)
 
-	def test_workflow_is_single_unconditional_flow(self):
-		"""Every order enters at Pending; which items are new is informational."""
+	def test_workflow_routes_approval_by_brand(self):
 		workflow = build_sales_order_item_approval_workflow("Sales Manager")
 
 		self.assertEqual(workflow["states"][0]["state"], STATE_PENDING)
@@ -327,13 +356,33 @@ class TestSalesOrderItemApprovalWorkflowDefinition(TestCase):
 			set(transitions),
 			{
 				(STATE_PENDING, ACTION_APPROVE),
+				(STATE_PENDING, ACTION_SUBMIT),
 				(STATE_PENDING, ACTION_REJECT),
 				(STATE_REJECTED, ACTION_SEND_FOR_APPROVAL),
 				(STATE_APPROVED, ACTION_CANCEL),
 			},
 		)
-		for transition in workflow["transitions"]:
-			self.assertFalse(transition.get("condition"))
+		for brand, user, actions in (
+			("SRV", "sales@example.test", {ACTION_SUBMIT}),
+			("SRV", "Administrator", {ACTION_SUBMIT}),
+			("Other Brand", "sales@example.test", set()),
+			("Other Brand", "manager@example.test", set()),
+			("Other Brand", "Administrator", {ACTION_APPROVE, ACTION_REJECT}),
+		):
+			with self.subTest(brand=brand, user=user):
+				available = {
+					t["action"] for t in workflow["transitions"]
+					if t["state"] == STATE_PENDING and frappe.safe_eval(
+						t.get("condition") or "True",
+						{"frappe": frappe._dict(session=frappe._dict(user=user))},
+						{"doc": frappe._dict(brand_filter=brand)},
+					)
+				}
+				self.assertEqual(available, actions)
+		submit = transitions[(STATE_PENDING, ACTION_SUBMIT)]
+		self.assertEqual(submit["allowed"], REQUESTER_ROLE)
+		self.assertEqual(submit["allow_self_approval"], 1)
+		self.assertEqual(submit["next_state"], STATE_APPROVED)
 
 	def test_approved_state_submits_and_sets_approval_flag(self):
 		workflow = build_sales_order_item_approval_workflow("Sales Manager")

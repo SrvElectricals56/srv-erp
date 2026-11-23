@@ -5,6 +5,7 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 from srv_erp.selling.sales_order_item_approval import (
 	ACTION_APPROVE,
+	ACTION_SUBMIT,
 	ACTION_CANCEL,
 	ACTION_REJECT,
 	ACTION_SEND_FOR_APPROVAL,
@@ -40,6 +41,7 @@ WORKFLOW_STATE_STYLES = {
 	STATE_CANCELLED: "Inverse",
 }
 WORKFLOW_ACTIONS = (
+	ACTION_SUBMIT,
 	ACTION_SEND_FOR_APPROVAL,
 	ACTION_APPROVE,
 	ACTION_REJECT,
@@ -67,12 +69,7 @@ WORKFLOW_TRANSITION_DEFAULTS = {
 def build_sales_order_item_approval_workflow(
 	approver_role: str, allow_self_approval: bool = False
 ) -> dict:
-	"""Return the single, unconditional Sales Order approval workflow.
-
-	Every order enters at `Pending` (as the superseded "Sales Approval" workflow
-	did) and a manager approves or rejects it. Which items are new is still
-	computed per row and shown to the approver; it no longer changes the route.
-	"""
+	"""Let salespeople submit SRV; require Administrator review for other brands."""
 	self_approval = 1 if allow_self_approval else 0
 	return {
 		"doctype": "Workflow",
@@ -115,6 +112,7 @@ def build_sales_order_item_approval_workflow(
 				"next_state": STATE_APPROVED,
 				"allowed": approver_role,
 				"allow_self_approval": self_approval,
+				"condition": 'doc.brand_filter != "SRV" and frappe.session.user == "Administrator"',
 			},
 			{
 				"state": STATE_PENDING,
@@ -122,6 +120,15 @@ def build_sales_order_item_approval_workflow(
 				"next_state": STATE_REJECTED,
 				"allowed": approver_role,
 				"allow_self_approval": self_approval,
+				"condition": 'doc.brand_filter != "SRV" and frappe.session.user == "Administrator"',
+			},
+			{
+				"state": STATE_PENDING,
+				"action": ACTION_SUBMIT,
+				"next_state": STATE_APPROVED,
+				"allowed": REQUESTER_ROLE,
+				"allow_self_approval": 1,
+				"condition": 'doc.brand_filter == "SRV"',
 			},
 			{
 				"state": STATE_REJECTED,

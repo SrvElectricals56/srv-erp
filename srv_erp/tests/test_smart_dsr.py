@@ -1,9 +1,9 @@
 """Regression tests with transaction-scoped fixtures; no production records modified."""
 
 import unittest
-from datetime import timedelta
+from datetime import date, timedelta
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import frappe
 from frappe.utils import getdate, now_datetime
@@ -13,6 +13,27 @@ from srv_erp.smart_dsr.policy import balance, coordinates, geofence, money, posi
 
 
 class TestPolicy(unittest.TestCase):
+	def test_order_copies_the_required_brand_from_its_items(self):
+		order = frappe._dict(
+			meta=Mock(get_field=Mock(return_value=frappe._dict(reqd=1)), has_field=Mock(return_value=False)),
+			append=Mock(return_value=Mock()),
+			set_missing_values=Mock(),
+			calculate_taxes_and_totals=Mock(),
+		)
+		item = frappe._dict(
+			name="ITEM-0001", brand="SRV", is_sales_item=1, stock_uom="Nos", check_permission=Mock()
+		)
+		with (
+			patch.object(frappe, "new_doc", return_value=order),
+			patch.object(frappe, "get_doc", return_value=item),
+			patch.object(api, "settings", return_value=frappe._dict(company="Test Company")),
+			patch.object(api, "getdate", return_value=date(2026, 11, 23)),
+			patch("srv_erp.selling.sales_order_uom.get_sales_order_uom", return_value=("Nos", None)),
+		):
+			api.build_order("CUSTOMER", [{"item_code": item.name, "qty": 1}], "2026-11-23")
+		self.assertEqual(order.brand_filter, "SRV")
+		order.set_missing_values.assert_called_once()
+
 	def test_fractional_order_quantities_are_not_currency_rounded(self):
 		self.assertEqual(positive_quantity("0.005"), 0.005)
 		for value in (0, -1, "NaN", "Infinity"):

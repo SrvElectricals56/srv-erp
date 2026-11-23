@@ -2354,11 +2354,18 @@ def build_order(customer, items, delivery_date):
 		# Existing SRV mandatory field: no additional discretionary discount in this workflow.
 		order.custom_discount__as_per_list = 0
 
+	brand_field = order.meta.get_field("brand_filter")
+	selected_brand = None
 	for item in items:
 		master = frappe.get_doc("Item", item["item_code"])
 		master.check_permission("read")
 		if master.disabled or not master.is_sales_item or master.has_variants:
 			frappe.throw("Choose an enabled saleable item variant.")
+		if brand_field and brand_field.reqd:
+			brand = master.get("brand")
+			if not brand or (selected_brand and brand != selected_brand):
+				frappe.throw(frappe._("Choose items that belong to a single Brand / Marka."))
+			selected_brand = brand
 		from srv_erp.selling.sales_order_uom import get_sales_order_uom
 
 		allowed_uom, _group = get_sales_order_uom(master.item_group)
@@ -2374,6 +2381,8 @@ def build_order(customer, items, delivery_date):
 		# New child defaults may be numeric zero; explicitly leave server pricing unset.
 		for field in ("rate", "price_list_rate", "discount_percentage", "discount_amount"):
 			row.set(field, None)
+	if selected_brand:
+		order.brand_filter = selected_brand
 	# ERPNext derives rates, UOM, taxes and pricing rules; client totals are ignored.
 	order.set_missing_values()
 	order.calculate_taxes_and_totals()

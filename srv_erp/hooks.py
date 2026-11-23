@@ -283,7 +283,10 @@ doc_events = {
 			"srv_erp.selling.sales_order_uom.validate_sales_order_uom",
 			# "srv_erp.selling.sales_order.validate_no_pending_sales_order",
 		],
-		"before_submit": "srv_erp.selling.sales_order_item_approval.validate_sales_order_item_approval_submission",
+		"before_submit": [
+			"srv_erp.selling.sales_order_item_approval.validate_sales_order_brand_approval",
+			"srv_erp.selling.sales_order_item_approval.validate_sales_order_item_approval_submission",
+		],
 	},
 	"Sales Person": {
 		"validate": "srv_erp.selling.sales_person_user_mapping.validate_sales_person_user_mapping",
