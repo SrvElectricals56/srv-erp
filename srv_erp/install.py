@@ -25,6 +25,7 @@ from srv_erp.selling.sales_order_ui import (
 from srv_erp.selling.sales_person_user_mapping import sync_all_sales_person_user_permissions
 from srv_erp.stock.stock_balance_report import use_srv_stock_balance_report
 from srv_erp.tree_group_filters import configure_tree_group_list_filters
+from srv_erp.patches.add_sales_order_brand_filter import execute as configure_sales_order_brand_filter
 
 
 def before_migrate():
@@ -34,6 +35,7 @@ def before_migrate():
 
 
 def after_install():
+	configure_sales_order_brand_filter()
 	setup_production()
 	ensure_dsr_roles()
 	activate_dynamic_item_creation()
@@ -59,6 +61,7 @@ def after_install():
 
 
 def after_migrate():
+	configure_sales_order_brand_filter()
 	setup_production()
 	ensure_dsr_roles()
 	setup_masters_module()
