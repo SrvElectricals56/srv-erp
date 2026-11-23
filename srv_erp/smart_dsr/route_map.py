@@ -4,7 +4,7 @@ from itertools import pairwise
 
 from frappe.utils import get_datetime
 
-from .policy import distance
+from .policy import UNVERIFIED_INTERVAL, distance
 
 
 def route_segments(points, max_gap=300, max_speed=160, max_accuracy=50):
@@ -14,7 +14,11 @@ def route_segments(points, max_gap=300, max_speed=160, max_accuracy=50):
 			get_datetime(current["captured_at"]) - get_datetime(previous["captured_at"])
 		).total_seconds()
 		km = distance(previous, current)
-		if not 0 < seconds <= max_gap or km / (seconds / 3600) > max_speed:
+		if (
+			current.get("rejection_reason") == UNVERIFIED_INTERVAL
+			or not 0 < seconds <= max_gap
+			or km / (seconds / 3600) > max_speed
+		):
 			gaps.append(
 				{
 					"from": previous["captured_at"],

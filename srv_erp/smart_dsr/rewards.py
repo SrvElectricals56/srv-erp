@@ -1,30 +1,44 @@
 """Server-owned visit reward evidence and account totals."""
 
+from bisect import bisect_left
+
 import frappe
 from frappe.utils import get_datetime
 
-from .policy import geofence, money
+from .policy import UNVERIFIED_INTERVAL, geofence, money
 
 
-def near_seconds(center, samples, max_gap=300, max_accuracy=50):
+def near_seconds(center, samples, max_gap=300, max_accuracy=50, *, interruptions=()):
 	"""Count only consecutive, precise samples inside the shop's 500 m fence."""
 	accuracy = center.get("accuracy")
 	if accuracy is None or not 0 <= accuracy <= max_accuracy or accuracy >= 500:
 		return 0
 	radius = 500 - accuracy
+	interruptions = sorted(get_datetime(stamp) for stamp in interruptions)
 	seconds = 0
-	previous = None
+	previous_at, previous_inside = None, False
 	for sample in sorted(samples, key=lambda row: get_datetime(row["captured_at"])):
-		inside = geofence(
-			center, sample, radius=radius, max_accuracy=max_accuracy
-		) == "Inside" and sample.get("verified", True)
-		if previous and inside and previous[1]:
-			gap = (
-				get_datetime(sample["captured_at"]) - get_datetime(previous[0]["captured_at"])
-			).total_seconds()
-			if 0 < gap <= max_gap:
+		captured_at = get_datetime(sample["captured_at"])
+		inside = geofence(center, sample, radius=radius, max_accuracy=max_accuracy) == "Inside"
+		verified = sample.get("verified", True)
+		if previous_inside and inside and verified:
+			gap = (captured_at - previous_at).total_seconds()
+			interruption = bisect_left(interruptions, previous_at)
+			if 0 < gap <= max_gap and (
+				interruption == len(interruptions) or interruptions[interruption] > captured_at
+			):
 				seconds += gap
-		previous = (sample, inside)
+		# A fresh fix after a gap can anchor later time even though its incoming leg was unverified.
+		received_at = sample.get("received_at")
+		previous_inside = inside and (
+			verified
+			or (
+				sample.get("rejection_reason") == UNVERIFIED_INTERVAL
+				and received_at is not None
+				and (get_datetime(received_at) - captured_at).total_seconds() <= max_gap
+			)
+		)
+		previous_at = captured_at
 	return seconds
 
 
@@ -68,13 +82,42 @@ def visit_evidence(row, ended_at, departure, max_gap=300, max_accuracy=50):
 				"account": row.account,
 				"captured_at": ["between", [start, ended_at]],
 			},
-			fields=["latitude", "longitude", "accuracy", "captured_at", "verified"],
+			fields=[
+				"latitude",
+				"longitude",
+				"accuracy",
+				"captured_at",
+				"received_at",
+				"verified",
+				"rejection_reason",
+			],
 			order_by="captured_at asc",
 			limit_page_length=0,
 		)
-		samples.insert(0, dict(center, captured_at=start))
+		tracking_scope = {"duty": row.duty, "account": row.account}
+		status_at_start = frappe.db.get_value(
+			"DSR Tracking Event",
+			{
+				**tracking_scope,
+				"event_type": ["in", ["Interrupted", "Resumed"]],
+				"recorded_at": ["<", start],
+			},
+			"event_type",
+			order_by="recorded_at desc, creation desc, name desc",
+		)
+		interruptions = frappe.get_all(
+			"DSR Tracking Event",
+			filters={
+				**tracking_scope,
+				"event_type": "Interrupted",
+				"recorded_at": ["between", [start, ended_at]],
+			},
+			pluck="recorded_at",
+			limit_page_length=0,
+		)
+		samples.insert(0, dict(center, captured_at=start, verified=status_at_start != "Interrupted"))
 		samples.append(dict(departure, captured_at=ended_at))
-		seconds = near_seconds(center, samples, max_gap, max_accuracy)
+		seconds = near_seconds(center, samples, max_gap, max_accuracy, interruptions=interruptions)
 	orders = frappe.get_all(
 		"Sales Order",
 		filters={
