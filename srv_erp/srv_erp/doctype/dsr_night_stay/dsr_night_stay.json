@@ -1,0 +1,188 @@
+{
+ "doctype": "DocType",
+ "name": "DSR Night Stay",
+ "module": "Srv Erp",
+ "autoname": "hash",
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "field_order": [
+  "account",
+  "employee",
+  "duty",
+  "latitude",
+  "longitude",
+  "accuracy",
+  "address",
+  "checked_in_at",
+  "checked_out_at",
+  "state",
+  "request_key",
+  "night_date",
+  "night_key",
+  "checkout_latitude",
+  "checkout_longitude",
+  "checkout_accuracy",
+  "checkout_distance_m",
+  "duration_minutes",
+  "expense",
+  "expense_amount"
+ ],
+ "fields": [
+  {
+   "fieldname": "account",
+   "label": "User Account",
+   "fieldtype": "Link",
+   "options": "User",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "employee",
+   "label": "Employee",
+   "fieldtype": "Link",
+   "reqd": 0,
+   "options": "Employee",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "duty",
+   "label": "Duty",
+   "fieldtype": "Link",
+   "options": "DSR Duty Session"
+  },
+  {
+   "fieldname": "latitude",
+   "label": "Latitude",
+   "fieldtype": "Float",
+   "precision": "8"
+  },
+  {
+   "fieldname": "longitude",
+   "label": "Longitude",
+   "fieldtype": "Float",
+   "precision": "8"
+  },
+  {
+   "fieldname": "accuracy",
+   "label": "Accuracy",
+   "fieldtype": "Float"
+  },
+  {
+   "fieldname": "address",
+   "label": "Address",
+   "fieldtype": "Small Text"
+  },
+  {
+   "fieldname": "checked_in_at",
+   "label": "Checked In At",
+   "fieldtype": "Datetime"
+  },
+  {
+   "fieldname": "checked_out_at",
+   "label": "Checked Out At",
+   "fieldtype": "Datetime"
+  },
+  {
+   "fieldname": "state",
+   "label": "State",
+   "fieldtype": "Select",
+   "default": "Inside",
+   "options": "Inside\nOutside\nUnknown"
+  },
+  {
+   "fieldname": "request_key",
+   "label": "Request Key",
+   "fieldtype": "Data",
+   "unique": 1
+  },
+  {
+   "fieldname": "night_date",
+   "label": "Night Date",
+   "fieldtype": "Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "night_key",
+   "label": "Night Key",
+   "fieldtype": "Data",
+   "read_only": 1,
+   "unique": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "checkout_latitude",
+   "label": "OFF Latitude",
+   "fieldtype": "Float",
+   "read_only": 1,
+   "precision": "8"
+  },
+  {
+   "fieldname": "checkout_longitude",
+   "label": "OFF Longitude",
+   "fieldtype": "Float",
+   "read_only": 1,
+   "precision": "8"
+  },
+  {
+   "fieldname": "checkout_accuracy",
+   "label": "OFF Accuracy",
+   "fieldtype": "Float",
+   "read_only": 1,
+   "precision": "2"
+  },
+  {
+   "fieldname": "checkout_distance_m",
+   "label": "Distance From ON (m)",
+   "fieldtype": "Float",
+   "read_only": 1,
+   "precision": "2"
+  },
+  {
+   "fieldname": "duration_minutes",
+   "label": "Stay Duration (Minutes)",
+   "fieldtype": "Float",
+   "read_only": 1,
+   "precision": "2"
+  },
+  {
+   "fieldname": "expense",
+   "label": "Night Stay Expense",
+   "fieldtype": "Link",
+   "read_only": 1,
+   "options": "DSR Expense Record"
+  },
+  {
+   "fieldname": "expense_amount",
+   "label": "Expense Amount",
+   "fieldtype": "Currency",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "report": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "Sales Rapl",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "All",
+   "read": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC"
+}

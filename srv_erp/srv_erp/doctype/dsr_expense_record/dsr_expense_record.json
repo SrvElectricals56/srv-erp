@@ -1,0 +1,117 @@
+{
+ "doctype": "DocType",
+ "name": "DSR Expense Record",
+ "module": "Srv Erp",
+ "autoname": "hash",
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "field_order": [
+  "account",
+  "employee",
+  "duty",
+  "category",
+  "amount",
+  "paid_from_cash",
+  "recorded_at",
+  "remarks",
+  "receipt",
+  "request_key",
+  "posting_status"
+ ],
+ "fields": [
+  {
+   "fieldname": "account",
+   "label": "User Account",
+   "fieldtype": "Link",
+   "options": "User",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "employee",
+   "label": "Employee",
+   "fieldtype": "Link",
+   "reqd": 0,
+   "options": "Employee",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "duty",
+   "label": "Duty",
+   "fieldtype": "Link",
+   "options": "DSR Duty Session"
+  },
+  {
+   "fieldname": "category",
+   "label": "Category",
+   "fieldtype": "Select",
+   "options": "Fuel Reimbursement\nToll\nParking\nAccommodation\nOther Business Expenses\nBreakfast\nLunch\nDinner\nNight Stay\nFuel (CNG/Petrol/Diesel)\nOther Expense"
+  },
+  {
+   "fieldname": "amount",
+   "label": "Amount",
+   "fieldtype": "Currency"
+  },
+  {
+   "fieldname": "paid_from_cash",
+   "label": "Paid From Cash",
+   "fieldtype": "Check"
+  },
+  {
+   "fieldname": "recorded_at",
+   "label": "Recorded At",
+   "fieldtype": "Datetime"
+  },
+  {
+   "fieldname": "remarks",
+   "label": "Remarks",
+   "fieldtype": "Small Text"
+  },
+  {
+   "fieldname": "receipt",
+   "label": "Receipt",
+   "fieldtype": "Attach"
+  },
+  {
+   "fieldname": "request_key",
+   "label": "Request Key",
+   "fieldtype": "Data",
+   "unique": 1
+  },
+  {
+   "fieldname": "posting_status",
+   "label": "Posting Status",
+   "fieldtype": "Select",
+   "options": "Recorded\nReversed",
+   "default": "Recorded",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "report": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "Sales Rapl",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "All",
+   "read": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC"
+}

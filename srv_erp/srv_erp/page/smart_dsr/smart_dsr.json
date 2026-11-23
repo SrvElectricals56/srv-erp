@@ -1,0 +1,12 @@
+{
+ "doctype": "Page",
+ "module": "Srv Erp",
+ "name": "smart-dsr",
+ "page_name": "smart-dsr",
+ "roles": [
+  {"role": "Sales Person"},
+  {"role": "Sales Manager"}
+ ],
+ "standard": "Yes",
+ "title": "Smart DSR"
+}

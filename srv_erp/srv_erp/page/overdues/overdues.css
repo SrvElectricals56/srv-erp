@@ -1,0 +1,46 @@
+.overdues-page { padding: 20px 0; }
+.overdues-page .overdues-filters { padding: 20px; margin-bottom: 20px; }
+.overdues-page .overdues-summary { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 12px; margin: 20px 0; }
+.overdues-page .overdues-metric { padding: 16px; min-width: 0; }
+.overdues-page .overdues-metric strong { display: block; font-size: 22px; margin-top: 8px; overflow-wrap: anywhere; }
+.overdues-page .overdues-ageing { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 12px; margin-bottom: 20px; }
+.overdues-page .overdues-age { text-align: left; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--card-bg); color: var(--text-color); }
+.overdues-page .overdues-age.active { border-color: var(--text-color); background: var(--control-bg); }
+.overdues-page .overdues-age strong { display: block; margin-top: 6px; }
+.overdues-page .overdues-table-card { padding: 20px; }
+.overdues-page .overdues-table-tools { display: flex; flex-direction: column; gap: 12px; align-items: stretch; margin-bottom: 16px; }
+.overdues-page .overdues-local-filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+.overdues-page .overdues-local-filters .frappe-control { min-width: 160px; margin-bottom: 0; }
+.overdues-page .overdues-scroll { overflow-x: auto; }
+.overdues-page table { white-space: nowrap; margin-bottom: 0; }
+.overdues-page td { vertical-align: middle; }
+.overdues-page .overdues-party-name { white-space: normal; min-width: 180px; max-width: 260px; }
+.overdues-page .overdues-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.overdues-page .overdues-footer { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 16px; align-items: center; }
+.overdues-page .overdues-note { margin: 12px 0; }
+.overdues-page .overdues-error { color: var(--text-on-red); background: var(--bg-red); border-radius: 8px; padding: 16px; }
+.overdues-page .overdues-empty { padding: 40px; text-align: center; color: var(--text-muted); }
+.overdues-invoice-scroll { overflow: auto; max-height: 55vh; }
+.overdues-invoice-scroll table { white-space: nowrap; }
+@media(max-width: 1000px) { .overdues-page .overdues-summary { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media(max-width: 600px) {
+ .overdues-page .overdues-summary { grid-template-columns: repeat(2,minmax(0,1fr)); }
+ .overdues-page .overdues-ageing { grid-template-columns: repeat(2,minmax(0,1fr)); }
+ .overdues-page .overdues-filters, .overdues-page .overdues-table-card { padding: 12px; }
+ .overdues-page .overdues-local-filters > div { width: 100%; }
+}
+
+.overdues-page .overdues-filter-actions { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; }
+.overdues-page .overdues-filter-actions .frappe-control { margin-bottom: 0; }
+
+.overdues-page .overdues-filters .section-body {
+ display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px;
+ min-width: 0; overflow: visible; padding-bottom: 4px;
+}
+.overdues-page .overdues-filters .form-column {
+ flex: 1 1 180px; width: auto; min-width: 0; max-width: 100%; padding: 0;
+}
+.overdues-page .overdues-filters .form-column:last-child { flex: 0 1 auto; }
+.overdues-page .overdues-filters .frappe-control { margin-bottom: 0; }
+.overdues-page .overdues-filter-actions { flex-wrap: wrap; }
+.overdues-page .overdues-filter-actions button { white-space: nowrap; }

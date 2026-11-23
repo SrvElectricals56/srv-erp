@@ -1,0 +1,130 @@
+{
+ "doctype": "DocType",
+ "name": "DSR GPS Point",
+ "module": "Srv Erp",
+ "autoname": "hash",
+ "engine": "InnoDB",
+ "track_changes": 0,
+ "field_order": [
+  "account",
+  "employee",
+  "duty",
+  "point_key",
+  "latitude",
+  "longitude",
+  "accuracy",
+  "captured_at",
+  "received_at",
+  "verified",
+  "rejection_reason",
+  "distance_km",
+  "estimated_distance_km"
+ ],
+ "fields": [
+  {
+   "fieldname": "account",
+   "label": "User Account",
+   "fieldtype": "Link",
+   "options": "User",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "employee",
+   "label": "Employee",
+   "fieldtype": "Link",
+   "reqd": 0,
+   "options": "Employee",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "duty",
+   "label": "Duty",
+   "fieldtype": "Link",
+   "options": "DSR Duty Session"
+  },
+  {
+   "fieldname": "point_key",
+   "label": "Point Key",
+   "fieldtype": "Data",
+   "unique": 1
+  },
+  {
+   "fieldname": "latitude",
+   "label": "Latitude",
+   "fieldtype": "Float",
+   "precision": "8"
+  },
+  {
+   "fieldname": "longitude",
+   "label": "Longitude",
+   "fieldtype": "Float",
+   "precision": "8"
+  },
+  {
+   "fieldname": "accuracy",
+   "label": "Accuracy",
+   "fieldtype": "Float"
+  },
+  {
+   "fieldname": "captured_at",
+   "label": "Captured At",
+   "fieldtype": "Datetime"
+  },
+  {
+   "fieldname": "received_at",
+   "label": "Received At",
+   "fieldtype": "Datetime"
+  },
+  {
+   "fieldname": "verified",
+   "label": "Verified",
+   "fieldtype": "Check"
+  },
+  {
+   "fieldname": "rejection_reason",
+   "label": "Rejection Reason",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "distance_km",
+   "label": "Distance Km",
+   "fieldtype": "Float"
+  },
+  {
+   "fieldname": "estimated_distance_km",
+   "label": "Estimated Distance KM",
+   "fieldtype": "Float",
+   "read_only": 1,
+   "precision": "4",
+   "default": "0"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "report": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "Sales Rapl",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "All",
+   "read": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC"
+}

@@ -1,0 +1,211 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:registration_number",
+ "creation": "2026-11-14 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "registration_number",
+  "allocated_to",
+  "vehicle_type",
+  "make",
+  "model",
+  "fuel_type",
+  "insurance_number",
+  "insurance_expiry",
+  "puc_number",
+  "puc_expiry",
+  "rc_number",
+  "rc_expiry",
+  "fastag_details",
+  "insurance_available",
+  "puc_available",
+  "rc_available",
+  "fastag_available",
+  "status",
+  "added_by",
+  "added_by_salesperson",
+  "created_date"
+ ],
+ "fields": [
+  {
+   "fieldname": "registration_number",
+   "fieldtype": "Data",
+   "label": "Vehicle Number",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "vehicle_type",
+   "fieldtype": "Data",
+   "label": "Vehicle Type",
+   "reqd": 0,
+   "hidden": 1
+  },
+  {
+   "fieldname": "make",
+   "fieldtype": "Data",
+   "label": "Make",
+   "reqd": 0,
+   "hidden": 1
+  },
+  {
+   "fieldname": "model",
+   "fieldtype": "Data",
+   "label": "Model",
+   "reqd": 0,
+   "hidden": 1
+  },
+  {
+   "fieldname": "fuel_type",
+   "fieldtype": "Select",
+   "label": "Fuel Type",
+   "options": "Petrol\nDiesel\nCNG",
+   "reqd": 1
+  },
+  {
+   "fieldname": "insurance_number",
+   "fieldtype": "Data",
+   "label": "Insurance Details",
+   "reqd": 0,
+   "hidden": 1
+  },
+  {
+   "fieldname": "insurance_expiry",
+   "fieldtype": "Date",
+   "label": "Insurance Expiry",
+   "reqd": 0
+  },
+  {
+   "fieldname": "puc_number",
+   "fieldtype": "Data",
+   "label": "PUC Details",
+   "reqd": 0,
+   "hidden": 1
+  },
+  {
+   "fieldname": "puc_expiry",
+   "fieldtype": "Date",
+   "label": "PUC Expiry",
+   "reqd": 0
+  },
+  {
+   "fieldname": "rc_number",
+   "fieldtype": "Data",
+   "label": "RC Details",
+   "reqd": 0,
+   "hidden": 1
+  },
+  {
+   "fieldname": "rc_expiry",
+   "fieldtype": "Date",
+   "label": "RC Expiry",
+   "reqd": 0
+  },
+  {
+   "fieldname": "fastag_details",
+   "fieldtype": "Data",
+   "label": "FASTag Details",
+   "reqd": 0,
+   "hidden": 1
+  },
+  {
+   "default": "Active",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Vehicle Status",
+   "options": "Active\nInactive",
+   "reqd": 1
+  },
+  {
+   "fieldname": "added_by",
+   "fieldtype": "Link",
+   "label": "Added By",
+   "options": "User",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "added_by_salesperson",
+   "fieldtype": "Link",
+   "label": "Added By Salesperson",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "created_date",
+   "fieldtype": "Datetime",
+   "label": "Created Date",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "insurance_available",
+   "fieldtype": "Check",
+   "label": "Insurance Available",
+   "default": "0"
+  },
+  {
+   "fieldname": "puc_available",
+   "fieldtype": "Check",
+   "label": "PUC Available",
+   "default": "0"
+  },
+  {
+   "fieldname": "rc_available",
+   "fieldtype": "Check",
+   "label": "RC Available",
+   "default": "0"
+  },
+  {
+   "fieldname": "fastag_available",
+   "fieldtype": "Check",
+   "label": "FASTag Available",
+   "default": "0"
+  },
+  {
+   "fieldname": "allocated_to",
+   "fieldtype": "Link",
+   "label": "Allocated Salesperson",
+   "options": "User",
+   "read_only": 1,
+   "search_index": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-14 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "SRV ERP",
+ "name": "DSR Vehicle",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "Administrator",
+   "read": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "create": 1,
+   "write": 1,
+   "delete": 0
+  },
+  {
+   "role": "Sales Person",
+   "read": 1,
+   "create": 0,
+   "write": 0,
+   "delete": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

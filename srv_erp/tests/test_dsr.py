@@ -51,15 +51,15 @@ class TestDSR(ERPNextTestSuite):
 			dsr.validate_audit_permissions()
 
 	@patch("srv_erp.srv_erp.doctype.dsr.dsr.frappe.get_all")
-	def test_participant_cannot_appear_in_another_dsr_for_same_date(self, get_all):
+	def test_participant_can_file_another_dsr_for_same_date(self, get_all):
 		get_all.side_effect = [
 			[frappe._dict(name="Existing DSR", sales_person="_Test Other Sales Person")],
 			["_Test Sales Person"],
 		]
 		dsr = self.make_dsr()
 
-		with self.assertRaises(frappe.ValidationError):
-			dsr.validate_participants()
+		dsr.validate_participants()
+		get_all.assert_not_called()
 
 	def test_partial_approval_cannot_exceed_claim(self):
 		dsr = self.make_dsr(
