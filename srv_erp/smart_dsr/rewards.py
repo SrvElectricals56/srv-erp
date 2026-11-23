@@ -6,12 +6,18 @@ from frappe.utils import get_datetime
 from .policy import geofence, money
 
 
-def near_seconds(center, samples, max_gap=300):
+def near_seconds(center, samples, max_gap=300, max_accuracy=50):
 	"""Count only consecutive, precise samples inside the shop's 500 m fence."""
+	accuracy = center.get("accuracy")
+	if accuracy is None or not 0 <= accuracy <= max_accuracy or accuracy >= 500:
+		return 0
+	radius = 500 - accuracy
 	seconds = 0
 	previous = None
 	for sample in sorted(samples, key=lambda row: get_datetime(row["captured_at"])):
-		inside = geofence(center, sample) == "Inside" and sample.get("verified", True)
+		inside = geofence(
+			center, sample, radius=radius, max_accuracy=max_accuracy
+		) == "Inside" and sample.get("verified", True)
 		if previous and inside and previous[1]:
 			gap = (
 				get_datetime(sample["captured_at"]) - get_datetime(previous[0]["captured_at"])
@@ -34,27 +40,41 @@ def start_timer(row, evidence):
 	api.save(row)
 
 
-def visit_evidence(row, ended_at, departure, max_gap=300):
+def visit_evidence(row, ended_at, departure, max_gap=300, max_accuracy=50):
 	start = row.get("reward_started_at")
 	if not start:
 		return 0, money(0), []
 	start, ended_at = get_datetime(start), get_datetime(ended_at)
-	center = {"latitude": row.reward_latitude, "longitude": row.reward_longitude}
-	samples = frappe.get_all(
-		"DSR GPS Point",
-		filters={
+	# Retakes retain the original timer and photo audit row, even after its file is removed.
+	center = frappe.db.get_value(
+		"DSR Dealer Photo Evidence",
+		{
+			"activity": row.name,
 			"duty": row.duty,
 			"account": row.account,
-			"captured_at": ["between", [start, ended_at]],
+			"received_at": start,
+			"capture_source": ["in", ["Browser camera", "Enrolled Android camera"]],
 		},
-		fields=["latitude", "longitude", "accuracy", "captured_at", "verified"],
-		order_by="captured_at asc",
-		limit_page_length=0,
+		["latitude", "longitude", "accuracy"],
+		order_by="creation asc, name asc",
+		as_dict=True,
 	)
-	# Uploaded photo and submission GPS provide trusted interval endpoints.
-	samples.insert(0, dict(center, accuracy=0, captured_at=start, verified=True))
-	samples.append(dict(departure, captured_at=ended_at, verified=True))
-	seconds = near_seconds(center, samples, max_gap)
+	seconds = 0
+	if center:
+		samples = frappe.get_all(
+			"DSR GPS Point",
+			filters={
+				"duty": row.duty,
+				"account": row.account,
+				"captured_at": ["between", [start, ended_at]],
+			},
+			fields=["latitude", "longitude", "accuracy", "captured_at", "verified"],
+			order_by="captured_at asc",
+			limit_page_length=0,
+		)
+		samples.insert(0, dict(center, captured_at=start))
+		samples.append(dict(departure, captured_at=ended_at))
+		seconds = near_seconds(center, samples, max_gap, max_accuracy)
 	orders = frappe.get_all(
 		"Sales Order",
 		filters={
@@ -119,11 +139,11 @@ def score_visit(seconds, order_amount):
 	return points, per_point, 1
 
 
-def finalize_reward(row, ended_at, departure, max_gap=300):
+def finalize_reward(row, ended_at, departure, max_gap=300, max_accuracy=50):
 	"""Persist the submission snapshot atomically with completion, once per visit."""
 	if row.get("reward_rule_version") or not row.get("reward_started_at"):
 		return
-	seconds, total, orders = visit_evidence(row, ended_at, departure, max_gap)
+	seconds, total, orders = visit_evidence(row, ended_at, departure, max_gap, max_accuracy)
 	points, threshold, penalty = score_visit(seconds, total)
 	row.reward_near_seconds = seconds
 	row.reward_order_amount = total

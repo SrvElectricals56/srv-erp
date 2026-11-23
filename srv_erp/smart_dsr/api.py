@@ -19,7 +19,16 @@ import frappe
 from frappe.utils import cint, flt, get_datetime, getdate, now_datetime
 
 from .admin_permissions import is_admin, require_finance
-from .policy import balance, coordinates, geofence, indian_vehicle_number, money, positive_quantity, segment
+from .policy import (
+	balance,
+	coordinates,
+	estimated_segment,
+	geofence,
+	indian_vehicle_number,
+	money,
+	positive_quantity,
+	segment,
+)
 from .security import account_for
 
 
@@ -698,12 +707,20 @@ def gps_batch(duty, points):
 	if not isinstance(points, list) or not points or len(points) > 200:
 		frappe.throw("Send at most 200 GPS points per batch.")
 	s = settings()
+	max_accuracy = flt(s.max_accuracy_m)
+	max_speed = flt(s.max_speed_kmh)
+	max_gap = cint(s.max_gap_seconds)
+	received_at = now_datetime()
+	fresh_since = received_at - timedelta(seconds=max_gap)
+	awaiting_recovery = doc.gps_status == "Interrupted"
+	if awaiting_recovery and doc.gps_interrupted_at:
+		fresh_since = max(fresh_since, get_datetime(doc.gps_interrupted_at))
 	last = frappe.get_doc("DSR GPS Point", doc.last_point) if doc.last_point else None
 	accepted = 0
-	for point in sorted(points, key=lambda p: str(p.get("captured_at", ""))):
+	timed_points = [(capture_time(point["captured_at"]), point) for point in points]
+	for timestamp, point in sorted(timed_points, key=lambda entry: entry[0]):
 		lat, lon, accuracy = coordinates(point["latitude"], point["longitude"], point["accuracy"])
-		timestamp = capture_time(point["captured_at"])
-		if timestamp > now_datetime() + timedelta(minutes=2) or timestamp < get_datetime(doc.started_at):
+		if timestamp > received_at + timedelta(minutes=2) or timestamp < get_datetime(doc.started_at):
 			frappe.throw("GPS timestamp lies outside this duty period.")
 		if doc.ended_at and not stay_name and timestamp > get_datetime(doc.ended_at):
 			frappe.throw("GPS timestamp lies after Duty OFF.")
@@ -721,16 +738,15 @@ def gps_batch(duty, points):
 			last.as_dict() if last else None,
 			current,
 			seconds,
-			flt(s.max_accuracy_m),
-			flt(s.max_speed_kmh),
-			cint(s.max_gap_seconds),
+			max_accuracy,
+			max_speed,
+			max_gap,
 		)
-		if doc.gps_status == "Interrupted" and last:
+		if awaiting_recovery and last:
 			km, reason = 0, "Unverified interval"
-		from .policy import estimated_segment
 
 		estimate = km or estimated_segment(
-			last.as_dict() if last else None, current, seconds, flt(s.max_speed_kmh), cint(s.max_gap_seconds)
+			last.as_dict() if last else None, current, seconds, max_speed, max_gap
 		)
 		if doc.status != "Active":
 			km = estimate = 0  # Night stay monitoring never accrues travel distance.
@@ -741,7 +757,7 @@ def gps_batch(duty, points):
 			point_key=pk,
 			**current,
 			captured_at=timestamp,
-			received_at=now_datetime(),
+			received_at=received_at,
 			verified=not bool(reason),
 			rejection_reason=reason,
 			distance_km=km,
@@ -760,6 +776,9 @@ def gps_batch(duty, points):
 		if not last or seconds > 0:
 			last = row
 			doc.last_point = row.name
+			# The first fresh fix closes the gap and anchors the next segment in this batch.
+			if timestamp >= fresh_since and accuracy <= max_accuracy:
+				awaiting_recovery = False
 		if stay_name:
 			stay = frappe.get_doc("DSR Night Stay", stay_name)
 			if timestamp < get_datetime(stay.checked_in_at):
@@ -776,8 +795,9 @@ def gps_batch(duty, points):
 	# Only a fresh accurate point restores live tracking; uploading historical points does not.
 	if (
 		last
-		and (now_datetime() - get_datetime(last.captured_at)).total_seconds() <= cint(s.max_gap_seconds)
-		and last.accuracy <= flt(s.max_accuracy_m)
+		and not awaiting_recovery
+		and get_datetime(last.captured_at) >= fresh_since
+		and last.accuracy <= max_accuracy
 	):
 		if doc.gps_status == "Interrupted":
 			event(doc, "Resumed", "Location permission / signal restored; gap remains unverified.")
@@ -786,9 +806,9 @@ def gps_batch(duty, points):
 		doc.manager_notified = 0
 	elif doc.status == "Active" and doc.gps_status != "Interrupted":
 		doc.gps_status = "Interrupted"
-		doc.gps_interrupted_at = now_datetime()
+		doc.gps_interrupted_at = received_at
 		event(doc, "Interrupted", "No fresh location within the configured accuracy threshold.")
-	doc.last_sync = now_datetime()
+	doc.last_sync = received_at
 	if doc.status == "Finalized":
 		return {"accepted": accepted, "verified_km": doc.verified_km, "gps_status": "Night stay monitoring"}
 	doc.verified_km = flt(
@@ -819,7 +839,7 @@ def gps_batch(duty, points):
 			latitude=last.latitude,
 			longitude=last.longitude,
 			accuracy=last.accuracy,
-			captured_at=last.captured_at,
+			captured_at=public_dates(get_datetime(last.captured_at)),
 		)
 		if last
 		else None,
@@ -1321,7 +1341,8 @@ def complete_activity(activity, gps, remarks=""):
 	row.departure_latitude, row.departure_longitude = point["latitude"], point["longitude"]
 	from .rewards import finalize_reward
 
-	finalize_reward(row, row.departed_at, point, cint(settings().max_gap_seconds))
+	s = settings()
+	finalize_reward(row, row.departed_at, point, cint(s.max_gap_seconds), flt(s.max_accuracy_m))
 	row.remarks, row.status = str(remarks)[:4000], "Completed"
 	save(row)
 	recalculate(doc)

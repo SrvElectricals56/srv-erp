@@ -26,6 +26,16 @@ class TestRewardEvidence(unittest.TestCase):
 	def test_does_not_count_missing_gps(self):
 		self.assertEqual(rewards.near_seconds(self.sample(0), [self.sample(0), self.sample(30)]), 0)
 
+	def test_approximate_photo_anchor_cannot_verify_nearby_time(self):
+		for accuracy in (None, 700):
+			center = dict(self.sample(0), accuracy=accuracy)
+			self.assertEqual(rewards.near_seconds(center, [self.sample(0), self.sample(1)]), 0)
+
+	def test_dealer_fence_accounts_for_uncertainty_of_both_fixes(self):
+		center = dict(self.sample(0), accuracy=25)
+		samples = [dict(self.sample(minute), latitude=28.00425, accuracy=10) for minute in (0, 1)]
+		self.assertEqual(rewards.near_seconds(center, samples), 0)
+
 	def test_outside_and_unverified_samples_break_interval(self):
 		for change in ({"latitude": 29}, {"accuracy": 100}, {"verified": False}):
 			middle = self.sample(1)
@@ -126,7 +136,9 @@ class TestRewardScoring(unittest.TestCase):
 				name="SO-2", currency="USD", grand_total=100, base_grand_total=9000, company="Company"
 			),
 		]
+		photo = frappe._dict(latitude=28, longitude=77, accuracy=5)
 		with (
+			patch.object(frappe, "db", Mock(get_value=Mock(return_value=photo))) as db,
 			patch.object(frappe, "get_all", side_effect=[[], orders]) as query,
 			patch.object(frappe, "get_cached_value", return_value="INR"),
 		):
@@ -136,6 +148,9 @@ class TestRewardScoring(unittest.TestCase):
 			self.assertEqual(seconds, 60)
 			self.assertEqual(amount, 29000)
 			self.assertEqual(len(accepted), 2)
+			photo_filters = db.get_value.call_args.args[1]
+			self.assertEqual(photo_filters["activity"], "visit")
+			self.assertEqual(photo_filters["received_at"], datetime(2026, 11, 17, 10))
 			filters = query.call_args.kwargs["filters"]
 			self.assertEqual(filters["custom_dsr_visit"], "visit")
 			self.assertEqual(filters["customer"], "Dealer")
