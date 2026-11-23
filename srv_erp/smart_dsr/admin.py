@@ -520,10 +520,11 @@ def people(filters, page, page_size, balances=False):
 				total_visits=0,
 				collections=0,
 			)
-		if balances:
-			from .cash_allocations import balances as account_balances
+		# People, profile details and Opening Balances must show the same cash
+		# allocation, including admin additions/returns during and between duties.
+		from .cash_allocations import balances as account_balances
 
-			row.update(account_balances(row.name, duty if names else None, filters.get("balance_as_of")))
+		row.update(account_balances(row.name, duty if names else None, filters.get("balance_as_of")))
 	return {"rows": rows, "total": total, "page": page, "page_size": page_size}
 
 

@@ -15,6 +15,19 @@ frappe.pages["smart-dsr"].on_page_load = function (wrapper) {
 };
 frappe.pages["smart-dsr"].on_page_show = function (wrapper) {
 	if (!wrapper.smart_dsr_frame) return;
+	if (frappe.get_route()[1] === "admin") {
+		wrapper.page.set_title(__("Smart DSR Admin"));
+		wrapper.page.set_secondary_action(__("Back"), () => {
+			if (window.history.length > 1) window.history.back();
+			else frappe.set_route("home");
+		}, "arrow-left");
+		wrapper.smart_dsr_frame.title = __("Smart DSR Admin");
+		const src = "/smart-dsr-admin?desk=1" + window.location.hash;
+		if (wrapper.smart_dsr_frame.getAttribute("src") !== src)
+			wrapper.smart_dsr_frame.src = src;
+		return;
+	}
+	wrapper.page.clear_secondary_action();
 	const query = new URLSearchParams(window.location.search);
 	const options = frappe.route_options || {};
 	const section = options.smart_dsr_section || query.get("section") || "dsr";
@@ -32,7 +45,9 @@ frappe.pages["smart-dsr"].on_page_show = function (wrapper) {
 			: "Smart DSR";
 	wrapper.page.set_title(__(title));
 	wrapper.smart_dsr_frame.title = __(title);
-	const hash = duty ? "#dsr/" + encodeURIComponent(duty) : window.location.hash;
+	const hash = duty
+		? "#dsr/" + encodeURIComponent(duty)
+		: window.location.hash || (section === "dsr" ? "#new-dsr" : "");
 	const src = `/smart-dsr-content?desk=1&section=${encodeURIComponent(section)}${hash}`;
 	if (wrapper.smart_dsr_frame.getAttribute("src") !== src) wrapper.smart_dsr_frame.src = src;
 };

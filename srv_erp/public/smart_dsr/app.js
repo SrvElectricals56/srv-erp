@@ -431,13 +431,19 @@
 			s.data = await api("summary", { duty: s.details.visit.duty });
 		if (location.hash.startsWith("#dsr/"))
 			s.data = await api("summary", { duty: decodeURIComponent(location.hash.slice(5)) });
-		if (
-			location.hash === "#new-dsr" &&
-			!s.profile.current?.duty?.status?.match(/^(Active|Closed)$/)
-		) {
-			s.data = null;
-			s.profile.official_opening_balance =
-				s.profile.current?.available_cash ?? s.profile.official_opening_balance;
+		if (location.hash === "#new-dsr") {
+			const pending = [s.profile.current?.duty, ...(s.profile.duties || [])].find(
+				(row) => row && /^(Active|Closed)$/.test(row.status)
+			);
+			if (pending) {
+				s.data = pending.name === s.profile.current?.duty?.name
+					? s.profile.current
+					: await api("summary", { duty: pending.name });
+			} else {
+				s.data = null;
+				s.profile.official_opening_balance =
+					s.profile.current?.available_cash ?? s.profile.official_opening_balance;
+			}
 		}
 		render();
 		openHomeSection();
@@ -500,7 +506,7 @@
 		if (window.self !== window.top && new URLSearchParams(location.search).get("desk") === "1")
 			return "";
 		return `<header class="dsr-header"><a class="brand" href="/app/smart-dsr"><span class="brand-mark">SRV</span><span>SRV Electricals<small>Smart DSR</small></span></a><div class="header-account">${
-			s.profile.can_admin ? '<a href="/smart-dsr/admin">Administrator Panel</a>' : ""
+			s.profile.can_admin ? '<a href="/app/smart-dsr/admin">Administrator Panel</a>' : ""
 		}<span>${esc(s.profile.employee_name)}<small>${new Date().toLocaleDateString("en-IN", {
 			dateStyle: "full",
 			timeZone: "Asia/Kolkata",

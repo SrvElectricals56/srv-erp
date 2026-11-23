@@ -36,13 +36,12 @@ app_include_css = [
 ]
 app_include_js = [
 	"/assets/srv_erp/js/home_collections.js?v=20261121-4",
-	"/assets/srv_erp/js/salesperson_home.js?v=20261121-16",
+	"/assets/srv_erp/js/salesperson_home.js?v=20261123-1",
 	"/assets/srv_erp/js/sales_person_defaults.js",
 	"/assets/srv_erp/js/customer_quick_entry.js?v=20261114-customer-group-1",
 	"/assets/srv_erp/js/dynamic_item_request.js",
-	"/assets/srv_erp/js/grid_column_templates.js",
-	"/assets/srv_erp/js/grid_bulk_delete.js",
-	"/assets/srv_erp/js/smart_dsr_search.js",
+	"grid_overrides.bundle.js",
+	"/assets/srv_erp/js/smart_dsr_search.js?v=20261123-1",
 	"/assets/srv_erp/js/overdues_cache.js?v=22",
 ]
 

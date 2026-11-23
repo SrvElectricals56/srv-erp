@@ -143,8 +143,8 @@
 							.find('[data-metric="Opening Balance"]')
 							.text(
 								money(
-									data.current?.duty?.opening_balance ??
-										data.official_opening_balance
+									data.official_opening_balance ??
+										data.current?.duty?.opening_balance
 								)
 							);
 						panel

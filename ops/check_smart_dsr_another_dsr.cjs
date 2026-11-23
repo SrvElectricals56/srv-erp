@@ -76,6 +76,21 @@ const assert = require("node:assert/strict");
       )}</script></body></html>`,
     })
   );
+  // Home opens the new-DSR route, but must resume unfinished work.
+  for (const pendingStatus of ["Finalized", "Active", "Closed"]) {
+    status = pendingStatus;
+    await page.goto("http://127.0.0.1:8001/another-test#new-dsr");
+    await page.reload();
+    if (status === "Finalized") {
+      await page.locator("#duty-form").waitFor();
+      assert.equal(await page.getByText("Previous Dealer", { exact: true }).count(), 0);
+    } else {
+      await page.locator(".badge").filter({ hasText: status === "Active" ? "Duty ON" : "Duty OFF" }).first().waitFor();
+      assert.equal(await page.locator("#duty-form").count(), 0);
+      assert.equal(status, pendingStatus, "Home must not finalize pending DSRs");
+    }
+  }
+  status = "Finalized";
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 950 });
     await page.goto("http://127.0.0.1:8001/another-test");

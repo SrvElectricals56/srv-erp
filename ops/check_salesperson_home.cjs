@@ -43,8 +43,8 @@ const root = path.resolve(__dirname, "..");
         xcall: () =>
           Promise.resolve(
             window.homeSnapshot || {
-              official_opening_balance: 100,
-              current: { duty: { opening_balance: 80 }, available_cash: 125 },
+              official_opening_balance: 50000,
+              current: { duty: { opening_balance: 0 }, available_cash: 50000 },
               currency: "INR",
               reward_points: 7,
               overdue_party_count: 2,
@@ -90,7 +90,7 @@ const root = path.resolve(__dirname, "..");
     } else {
       await page
         .locator('[data-metric="Closing Balance"]')
-        .filter({ hasText: "125" })
+        .filter({ hasText: "50000" })
         .waitFor();
       assert.equal(await page.locator(".salesperson-home-tile").count(), 12);
       assert.equal(await page.locator(".original").isVisible(), false);
@@ -102,7 +102,7 @@ const root = path.resolve(__dirname, "..");
       );
       assert.equal(
         await page.locator('[data-metric="Opening Balance"]').textContent(),
-        "INR 80"
+        "INR 50000"
       );
       assert.equal(
         await page.locator('[data-metric="Total Earn Points"]').textContent(),

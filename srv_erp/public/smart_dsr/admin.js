@@ -2,6 +2,13 @@
 (() => {
 	"use strict";
 	const root = document.getElementById("dsr-admin");
+	if (window.self !== window.top) {
+		root.addEventListener("click", (event) => {
+			const link = event.target.closest("a[href]");
+			if (link && new URL(link.href, location.href).pathname.startsWith("/app"))
+				link.target = "_top";
+		});
+	}
 	const nav = [
 		["overview", "Overview"],
 		["people", "Salespersons"],
@@ -1187,14 +1194,14 @@
 				collections: "record-filter-rows",
 				expenses: "record-filter-rows",
 			}[filterKind()] || "";
-		root.innerHTML = `<aside class="admin-sidebar"><a href="/smart-dsr/admin" class="admin-brand"><b>SRV</b><span>SRV Electricals<small>Smart DSR Control Panel</small></span></a><nav>${nav
+		root.innerHTML = `<aside class="admin-sidebar"><a href="/app/smart-dsr/admin" target="_top" class="admin-brand"><b>SRV</b><span>SRV Electricals<small>Smart DSR Control Panel</small></span></a><nav>${nav
 			.map(
 				([id, label]) =>
 					`<a class="${s.page === id ? "active" : ""}" href="#${id}">${label}</a>`
 			)
 			.join(
 				""
-			)}</nav><a class="back-link" href="/smart-dsr">← Salesperson website</a></aside><div class="admin-content"><header><div><p class="eyebrow">ADMINISTRATOR</p><h1>${pageLabel}</h1></div><span>${esc(
+			)}</nav><a class="back-link" href="/app/home" target="_top">← Back to Home</a></aside><div class="admin-content"><header><div><p class="eyebrow">ADMINISTRATOR</p><h1>${pageLabel}</h1></div><span>${esc(
 			s.profile.user
 		)}</span></header><div id="admin-message" role="status" hidden></div><section class="panel">${
 			s.page === "duties"
@@ -2050,6 +2057,6 @@
 		.catch((e) => {
 			root.innerHTML = `<main class="denied"><h1>Smart DSR Administrator</h1><p role="alert">${esc(
 				e.message
-			)}</p><a href="/smart-dsr">Return to Smart DSR</a></main>`;
+			)}</p><a href="/app/home" target="_top">Return to Smart DSR</a></main>`;
 		});
 })();

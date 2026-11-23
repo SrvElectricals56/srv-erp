@@ -291,29 +291,14 @@ def bootstrap():
 		for row in duties:
 			row.expense_total = float(money(row.expense_total))
 	current = duties[0].name if duties else None
-	opening_field = (
-		"opening_balance"
-		if duties and (duties[0].status in ("Active", "Closed") or getdate(duties[0].work_date) == getdate())
-		else "closing_balance"
-	)
-	official_opening = (
-		frappe.db.get_value("DSR Duty Session", current, opening_field)
-		if current
-		else frappe.db.get_value(
-			"DSR Cash Ledger",
-			{"account": account, "transaction_type": "Opening", "duty": ["is", "not set"]},
-			"amount",
-		)
-	)
 	from .cash_allocations import balances as account_balances
 
 	current_summary = summary(current) if current else None
-	if not duties or duties[0].status == "Finalized":
-		doc = frappe.get_doc("DSR Duty Session", current) if current else None
-		current_balances = account_balances(account, doc)
-		official_opening = current_balances["closing_balance"]
-		if current_summary:
-			current_summary["available_cash"] = current_balances["closing_balance"]
+	doc = frappe.get_doc("DSR Duty Session", current) if current else None
+	current_balances = account_balances(account, doc)
+	official_opening = current_balances["opening_balance"]
+	if current_summary:
+		current_summary["available_cash"] = current_balances["closing_balance"]
 	overdue_rows = allocated_dealer_overdues()["rows"]
 	return {
 		"overdue_count": sum(int(row["entry_count"]) for row in overdue_rows),

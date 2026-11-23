@@ -193,6 +193,34 @@ class TestOpeningCash(unittest.TestCase):
 		)
 		self.assertEqual(len(self.ledger), 3)
 
+	def test_people_and_profile_show_admin_addition_in_both_balances_without_duty(self):
+		self.initialized(1000)
+		self.call("add", 500)
+		with (
+			patch.object(
+				admin.frappe,
+				"get_all",
+				side_effect=[[Row(name="sales@test", full_name="Sales User")], []],
+				create=True,
+			),
+			patch.object(admin, "record_count", return_value=1),
+		):
+			row = admin.people({"all_dates": True}, 1, 20)["rows"][0]
+		self.assertEqual(row.opening_balance, 1500)
+		self.assertEqual(row.closing_balance, 1500)
+
+	def test_active_duty_addition_preserves_collections_in_closing_balance(self):
+		self.duty(opening=1000)
+		self.insert(
+			"DSR Cash Ledger", account="sales@test", duty=self.doc.name,
+			transaction_type="Collection", amount=300,
+		)
+		self.call("add", 500)
+		self.assertEqual(
+			cash.balances("sales@test", self.doc),
+			{"opening_balance": 1500, "closing_balance": 1800},
+		)
+
 	def test_active_duty_cash_addition_does_not_double_count_and_returns_reduce_both_balances(self):
 		self.duty()
 		self.call("add", 500)
