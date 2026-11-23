@@ -20,6 +20,7 @@ from frappe.utils import cint, flt, get_datetime, getdate, now_datetime
 
 from .admin_permissions import is_admin, require_finance
 from .policy import (
+	UNVERIFIED_INTERVAL,
 	balance,
 	coordinates,
 	estimated_segment,
@@ -743,7 +744,7 @@ def gps_batch(duty, points):
 			max_gap,
 		)
 		if awaiting_recovery and last:
-			km, reason = 0, "Unverified interval"
+			km, reason = 0, UNVERIFIED_INTERVAL
 
 		estimate = km or estimated_segment(
 			last.as_dict() if last else None, current, seconds, max_speed, max_gap

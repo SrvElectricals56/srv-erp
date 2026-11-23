@@ -3,6 +3,8 @@
 from decimal import ROUND_HALF_UP, Decimal
 from math import asin, cos, isfinite, radians, sin, sqrt
 
+UNVERIFIED_INTERVAL = "Unverified interval"
+
 
 def money(value):
 	value = Decimal(str(value or 0))
@@ -41,7 +43,7 @@ def segment(previous, point, seconds, max_accuracy=50, max_speed=160, max_gap=30
 	if not previous:
 		return 0, ""
 	if seconds <= 0 or seconds > max_gap:
-		return 0, "Unverified interval"
+		return 0, UNVERIFIED_INTERVAL
 	km = distance(previous, point)
 	if km / (seconds / 3600) > max_speed:
 		return 0, "Implausible speed"

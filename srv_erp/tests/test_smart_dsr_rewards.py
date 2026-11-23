@@ -44,6 +44,25 @@ class TestRewardEvidence(unittest.TestCase):
 				rewards.near_seconds(self.sample(0), [self.sample(0), middle, self.sample(2)]), 0
 			)
 
+	def test_reported_interruption_breaks_a_short_interval(self):
+		center = self.sample(0)
+		interruptions = [self.sample(1)["captured_at"]]
+		self.assertEqual(
+			rewards.near_seconds(center, [center, self.sample(3)], interruptions=interruptions), 0
+		)
+
+	def test_first_fresh_recovery_fix_anchors_only_the_outgoing_interval(self):
+		center = self.sample(0)
+		recovery = dict(
+			self.sample(1),
+			verified=False,
+			rejection_reason="Unverified interval",
+			received_at=self.sample(2)["captured_at"],
+		)
+		self.assertEqual(rewards.near_seconds(center, [center, recovery, self.sample(2)]), 60)
+		recovery["received_at"] = self.sample(8)["captured_at"]
+		self.assertEqual(rewards.near_seconds(center, [center, recovery, self.sample(2)]), 0)
+
 	def test_retake_keeps_original_timer(self):
 		row = frappe._dict(reward_started_at="2026-11-17 10:00:00")
 		with patch("srv_erp.smart_dsr.api.save") as save:
@@ -138,8 +157,8 @@ class TestRewardScoring(unittest.TestCase):
 		]
 		photo = frappe._dict(latitude=28, longitude=77, accuracy=5)
 		with (
-			patch.object(frappe, "db", Mock(get_value=Mock(return_value=photo))) as db,
-			patch.object(frappe, "get_all", side_effect=[[], orders]) as query,
+			patch.object(frappe, "db", Mock(get_value=Mock(side_effect=[photo, None]))) as db,
+			patch.object(frappe, "get_all", side_effect=[[], [], orders]) as query,
 			patch.object(frappe, "get_cached_value", return_value="INR"),
 		):
 			seconds, amount, accepted = rewards.visit_evidence(
@@ -148,7 +167,7 @@ class TestRewardScoring(unittest.TestCase):
 			self.assertEqual(seconds, 60)
 			self.assertEqual(amount, 29000)
 			self.assertEqual(len(accepted), 2)
-			photo_filters = db.get_value.call_args.args[1]
+			photo_filters = db.get_value.call_args_list[0].args[1]
 			self.assertEqual(photo_filters["activity"], "visit")
 			self.assertEqual(photo_filters["received_at"], datetime(2026, 11, 17, 10))
 			filters = query.call_args.kwargs["filters"]

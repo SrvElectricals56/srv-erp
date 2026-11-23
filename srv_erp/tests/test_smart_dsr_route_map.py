@@ -51,6 +51,16 @@ class TestRouteSegments(unittest.TestCase):
 		self.assertEqual(len(segments), 2)
 		self.assertEqual(len(gaps), 1)
 
+	def test_short_reported_interruption_is_a_gap_before_a_verified_segment(self):
+		first = self.point(0)
+		recovery = dict(self.point(1, 28.001, verified=0), rejection_reason="Unverified interval")
+		last = self.point(2, 28.002)
+		segments, gaps = route_segments([first, recovery, last])
+		self.assertEqual([segment["kind"] for segment in segments], ["verified"])
+		self.assertEqual(segments[0]["started_at"], recovery["captured_at"])
+		self.assertEqual(len(gaps), 1)
+		self.assertEqual((gaps[0]["from"], gaps[0]["to"]), (first["captured_at"], recovery["captured_at"]))
+
 	def test_empty_and_single_point_routes(self):
 		self.assertEqual(route_segments([]), ([], []))
 		self.assertEqual(route_segments([self.point(0)]), ([], []))
