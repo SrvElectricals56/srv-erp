@@ -1,0 +1,337 @@
+{
+ "doctype": "DocType",
+ "name": "DSR Duty Session",
+ "module": "Srv Erp",
+ "autoname": "hash",
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "field_order": [
+  "account",
+  "employee",
+  "dsr",
+  "work_date",
+  "daily_key",
+  "status",
+  "vehicle_number",
+  "fuel_type",
+  "start_location",
+  "started_at",
+  "ended_at",
+  "opening_balance",
+  "closing_balance",
+  "verified_km",
+  "gps_status",
+  "last_sync",
+  "gps_interrupted_at",
+  "manager_notified",
+  "fuel_rate",
+  "fuel_reimbursement",
+  "meal_allowance",
+  "last_point",
+  "gps_exception",
+  "confirmed_insurance",
+  "confirmed_puc",
+  "confirmed_rc",
+  "confirmed_fastag",
+  "documents_confirmed_at",
+  "documents_confirmed_by",
+  "odometer_start",
+  "odometer_start_photo",
+  "odometer_start_captured_at",
+  "odometer_end",
+  "odometer_end_photo",
+  "odometer_end_captured_at",
+  "odometer_distance",
+  "odometer_start_sha256",
+  "odometer_end_sha256",
+  "odometer_required",
+  "estimated_km",
+  "no_visit_duty",
+  "duty_off_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "account",
+   "label": "User Account",
+   "fieldtype": "Link",
+   "options": "User",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "employee",
+   "label": "Employee",
+   "fieldtype": "Link",
+   "reqd": 0,
+   "options": "Employee",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "dsr",
+   "label": "Dsr",
+   "fieldtype": "Link",
+   "options": "DSR"
+  },
+  {
+   "fieldname": "work_date",
+   "label": "Work Date",
+   "fieldtype": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "daily_key",
+   "label": "Daily Key",
+   "fieldtype": "Data",
+   "unique": 1
+  },
+  {
+   "fieldname": "status",
+   "label": "Status",
+   "fieldtype": "Select",
+   "default": "Active",
+   "options": "Active\nClosed\nFinalized"
+  },
+  {
+   "fieldname": "vehicle_number",
+   "label": "Vehicle Number",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "fuel_type",
+   "label": "Fuel Type",
+   "fieldtype": "Select",
+   "options": "CNG\nDiesel\nPetrol"
+  },
+  {
+   "fieldname": "start_location",
+   "label": "Start Location",
+   "fieldtype": "Select",
+   "options": "Home\nCurrent Location\nNight Stay"
+  },
+  {
+   "fieldname": "started_at",
+   "label": "Started At",
+   "fieldtype": "Datetime"
+  },
+  {
+   "fieldname": "ended_at",
+   "label": "Ended At",
+   "fieldtype": "Datetime"
+  },
+  {
+   "fieldname": "opening_balance",
+   "label": "Opening Balance",
+   "fieldtype": "Currency"
+  },
+  {
+   "fieldname": "closing_balance",
+   "label": "Closing Balance",
+   "fieldtype": "Currency"
+  },
+  {
+   "fieldname": "verified_km",
+   "label": "Verified Km",
+   "fieldtype": "Float"
+  },
+  {
+   "fieldname": "gps_status",
+   "label": "Gps Status",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "last_sync",
+   "label": "Last Sync",
+   "fieldtype": "Datetime"
+  },
+  {
+   "fieldname": "gps_interrupted_at",
+   "label": "Gps Interrupted At",
+   "fieldtype": "Datetime"
+  },
+  {
+   "fieldname": "manager_notified",
+   "label": "Manager Notified",
+   "fieldtype": "Check"
+  },
+  {
+   "fieldname": "fuel_rate",
+   "label": "Fuel Rate",
+   "fieldtype": "Currency"
+  },
+  {
+   "fieldname": "fuel_reimbursement",
+   "label": "Fuel Reimbursement",
+   "fieldtype": "Currency"
+  },
+  {
+   "fieldname": "meal_allowance",
+   "label": "Meal Allowance",
+   "fieldtype": "Currency"
+  },
+  {
+   "fieldname": "last_point",
+   "label": "Last Point",
+   "fieldtype": "Link",
+   "options": "DSR GPS Point"
+  },
+  {
+   "fieldname": "gps_exception",
+   "label": "Gps Exception",
+   "fieldtype": "Small Text"
+  },
+  {
+   "read_only": 1,
+   "fieldname": "confirmed_insurance",
+   "label": "Confirmed Insurance",
+   "fieldtype": "Check"
+  },
+  {
+   "read_only": 1,
+   "fieldname": "confirmed_puc",
+   "label": "Confirmed Puc",
+   "fieldtype": "Check"
+  },
+  {
+   "read_only": 1,
+   "fieldname": "confirmed_rc",
+   "label": "Confirmed Rc",
+   "fieldtype": "Check"
+  },
+  {
+   "read_only": 1,
+   "fieldname": "confirmed_fastag",
+   "label": "Confirmed Fastag",
+   "fieldtype": "Check"
+  },
+  {
+   "read_only": 1,
+   "fieldname": "documents_confirmed_at",
+   "label": "Documents Confirmed At",
+   "fieldtype": "Datetime"
+  },
+  {
+   "read_only": 1,
+   "fieldname": "documents_confirmed_by",
+   "label": "Documents Confirmed By",
+   "fieldtype": "Link",
+   "options": "User"
+  },
+  {
+   "fieldname": "odometer_start",
+   "label": "Starting Meter (KM)",
+   "fieldtype": "Float",
+   "read_only": 1,
+   "precision": "2"
+  },
+  {
+   "fieldname": "odometer_start_photo",
+   "label": "Starting Meter Photo",
+   "fieldtype": "Attach Image",
+   "read_only": 1
+  },
+  {
+   "fieldname": "odometer_start_captured_at",
+   "label": "Starting Meter Captured At",
+   "fieldtype": "Datetime",
+   "read_only": 1
+  },
+  {
+   "fieldname": "odometer_end",
+   "label": "Ending Meter (KM)",
+   "fieldtype": "Float",
+   "read_only": 1,
+   "precision": "2"
+  },
+  {
+   "fieldname": "odometer_end_photo",
+   "label": "Ending Meter Photo",
+   "fieldtype": "Attach Image",
+   "read_only": 1
+  },
+  {
+   "fieldname": "odometer_end_captured_at",
+   "label": "Ending Meter Captured At",
+   "fieldtype": "Datetime",
+   "read_only": 1
+  },
+  {
+   "fieldname": "odometer_distance",
+   "label": "Meter Distance (KM)",
+   "fieldtype": "Float",
+   "read_only": 1,
+   "precision": "2"
+  },
+  {
+   "fieldname": "odometer_start_sha256",
+   "label": "Starting Meter Photo Hash",
+   "fieldtype": "Data",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "odometer_end_sha256",
+   "label": "Ending Meter Photo Hash",
+   "fieldtype": "Data",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "odometer_required",
+   "label": "Meter Evidence Required",
+   "fieldtype": "Check",
+   "read_only": 1,
+   "hidden": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "estimated_km",
+   "label": "Estimated Tracked KM",
+   "fieldtype": "Float",
+   "read_only": 1,
+   "precision": "4",
+   "default": "0"
+  },
+  {
+   "fieldname": "no_visit_duty",
+   "label": "No Visits \u2014 Excluded from Duty",
+   "fieldtype": "Check",
+   "read_only": 1,
+   "no_copy": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "duty_off_reason",
+   "label": "Duty OFF Reason",
+   "fieldtype": "Small Text",
+   "read_only": 1,
+   "no_copy": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "report": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "Sales Rapl",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "All",
+   "read": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC"
+}

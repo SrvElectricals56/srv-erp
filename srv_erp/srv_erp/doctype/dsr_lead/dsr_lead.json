@@ -8,6 +8,7 @@
   "party_name",
   "town",
   "contact_number",
+  "money_collected",
   "remarks"
  ],
  "fields": [
@@ -16,21 +17,34 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Party Name",
-   "reqd": 1
+   "reqd": 1,
+   "columns": 3
   },
   {
    "fieldname": "town",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Town",
-   "options": "DSR Town"
+   "options": "DSR Town",
+   "columns": 2
   },
   {
    "fieldname": "contact_number",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Contact Number",
-   "options": "Phone"
+   "options": "Phone",
+   "description": "Select a country code and enter exactly 10 digits.",
+   "columns": 3
+  },
+  {
+   "fieldname": "money_collected",
+   "fieldtype": "Currency",
+   "label": "Money Collected",
+   "default": "0",
+   "non_negative": 1,
+   "in_list_view": 1,
+   "columns": 2
   },
   {
    "fieldname": "remarks",

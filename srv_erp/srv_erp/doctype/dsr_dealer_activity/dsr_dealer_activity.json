@@ -1,0 +1,290 @@
+{
+ "doctype": "DocType",
+ "name": "DSR Dealer Activity",
+ "module": "Srv Erp",
+ "autoname": "hash",
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "field_order": [
+  "account",
+  "employee",
+  "duty",
+  "customer",
+  "arrived_at",
+  "departed_at",
+  "latitude",
+  "longitude",
+  "accuracy",
+  "departure_latitude",
+  "departure_longitude",
+  "status",
+  "remarks",
+  "outstanding_reviewed",
+  "photo_exception",
+  "request_key",
+  "travel_distance_km",
+  "travel_duration_seconds",
+  "activity_duration_minutes",
+  "visit_number",
+  "origin_activity",
+  "travel_started_at",
+  "origin_latitude",
+  "origin_longitude",
+  "travel_verification",
+  "dealer_review",
+  "reward_started_at",
+  "reward_latitude",
+  "reward_longitude",
+  "reward_near_seconds",
+  "reward_order_amount",
+  "reward_points",
+  "reward_rule_version",
+  "reward_calculation"
+ ],
+ "fields": [
+  {
+   "fieldname": "account",
+   "label": "User Account",
+   "fieldtype": "Link",
+   "options": "User",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "employee",
+   "label": "Employee",
+   "fieldtype": "Link",
+   "reqd": 0,
+   "options": "Employee",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "duty",
+   "label": "Duty",
+   "fieldtype": "Link",
+   "options": "DSR Duty Session"
+  },
+  {
+   "fieldname": "customer",
+   "label": "Customer",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Customer"
+  },
+  {
+   "fieldname": "arrived_at",
+   "label": "Arrived At",
+   "fieldtype": "Datetime"
+  },
+  {
+   "fieldname": "departed_at",
+   "label": "Departed At",
+   "fieldtype": "Datetime"
+  },
+  {
+   "fieldname": "latitude",
+   "label": "Latitude",
+   "fieldtype": "Float",
+   "precision": "8"
+  },
+  {
+   "fieldname": "longitude",
+   "label": "Longitude",
+   "fieldtype": "Float",
+   "precision": "8"
+  },
+  {
+   "fieldname": "accuracy",
+   "label": "Accuracy",
+   "fieldtype": "Float"
+  },
+  {
+   "fieldname": "departure_latitude",
+   "label": "Departure Latitude",
+   "fieldtype": "Float"
+  },
+  {
+   "fieldname": "departure_longitude",
+   "label": "Departure Longitude",
+   "fieldtype": "Float"
+  },
+  {
+   "fieldname": "status",
+   "label": "Status",
+   "fieldtype": "Select",
+   "default": "Open",
+   "options": "Open\nCompleted\nDeleted"
+  },
+  {
+   "fieldname": "remarks",
+   "label": "Remarks",
+   "fieldtype": "Small Text"
+  },
+  {
+   "fieldname": "outstanding_reviewed",
+   "label": "Outstanding Reviewed",
+   "fieldtype": "Currency"
+  },
+  {
+   "fieldname": "photo_exception",
+   "label": "Photo Exception",
+   "fieldtype": "Small Text"
+  },
+  {
+   "fieldname": "request_key",
+   "label": "Request Key",
+   "fieldtype": "Data",
+   "unique": 1
+  },
+  {
+   "fieldname": "travel_distance_km",
+   "label": "Travel Distance Km",
+   "fieldtype": "Float",
+   "read_only": 1
+  },
+  {
+   "fieldname": "travel_duration_seconds",
+   "label": "Travel Duration Seconds",
+   "fieldtype": "Float",
+   "read_only": 1
+  },
+  {
+   "fieldname": "activity_duration_minutes",
+   "label": "Activity Duration Minutes",
+   "fieldtype": "Float",
+   "read_only": 1
+  },
+  {
+   "read_only": 1,
+   "fieldname": "visit_number",
+   "label": "Visit Number",
+   "fieldtype": "Int"
+  },
+  {
+   "read_only": 1,
+   "fieldname": "origin_activity",
+   "label": "Origin Activity",
+   "fieldtype": "Link",
+   "options": "DSR Dealer Activity"
+  },
+  {
+   "read_only": 1,
+   "fieldname": "travel_started_at",
+   "label": "Travel Started At",
+   "fieldtype": "Datetime"
+  },
+  {
+   "read_only": 1,
+   "fieldname": "origin_latitude",
+   "label": "Origin Latitude",
+   "fieldtype": "Float",
+   "precision": "8"
+  },
+  {
+   "read_only": 1,
+   "fieldname": "origin_longitude",
+   "label": "Origin Longitude",
+   "fieldtype": "Float",
+   "precision": "8"
+  },
+  {
+   "read_only": 1,
+   "fieldname": "travel_verification",
+   "label": "Travel Verification",
+   "fieldtype": "Data"
+  },
+  {
+   "read_only": 1,
+   "fieldname": "dealer_review",
+   "label": "Dealer Review",
+   "fieldtype": "Long Text"
+  },
+  {
+   "fieldname": "reward_started_at",
+   "label": "Reward Timer Started",
+   "fieldtype": "Datetime",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "reward_latitude",
+   "label": "Reward Shop Latitude",
+   "fieldtype": "Float",
+   "read_only": 1,
+   "no_copy": 1,
+   "precision": "8"
+  },
+  {
+   "fieldname": "reward_longitude",
+   "label": "Reward Shop Longitude",
+   "fieldtype": "Float",
+   "read_only": 1,
+   "no_copy": 1,
+   "precision": "8"
+  },
+  {
+   "fieldname": "reward_near_seconds",
+   "label": "Verified Time Near Dealer (Seconds)",
+   "fieldtype": "Float",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "reward_order_amount",
+   "label": "Reward Order Amount (INR)",
+   "fieldtype": "Currency",
+   "read_only": 1,
+   "no_copy": 1,
+   "options": "INR"
+  },
+  {
+   "fieldname": "reward_points",
+   "label": "Reward Points",
+   "fieldtype": "Float",
+   "read_only": 1,
+   "no_copy": 1,
+   "precision": "2"
+  },
+  {
+   "fieldname": "reward_rule_version",
+   "label": "Reward Rule Version",
+   "fieldtype": "Int",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "reward_calculation",
+   "label": "Reward Calculation",
+   "fieldtype": "Long Text",
+   "read_only": 1,
+   "no_copy": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "report": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "Sales Rapl",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "All",
+   "read": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC"
+}

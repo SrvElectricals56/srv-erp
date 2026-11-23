@@ -1,0 +1,169 @@
+{
+ "doctype": "DocType",
+ "name": "Dealer Overdue",
+ "module": "Srv Erp",
+ "autoname": "format:DUE-{#####}",
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "allow_rename": 0,
+ "title_field": "customer_name",
+ "search_fields": "customer,customer_name,reference_no",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "field_order": [
+  "company",
+  "currency",
+  "customer",
+  "customer_name",
+  "entry_date",
+  "due_date",
+  "reference_no",
+  "territory",
+  "sales_person",
+  "amount",
+  "amount_received",
+  "outstanding_amount",
+  "state",
+  "remarks",
+  "request_key"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "label": "Company",
+   "fieldtype": "Link",
+   "options": "Company",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "currency",
+   "label": "Currency",
+   "fieldtype": "Link",
+   "options": "Currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer",
+   "label": "Dealer / Party",
+   "fieldtype": "Link",
+   "options": "Customer",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "customer_name",
+   "label": "Dealer Name",
+   "fieldtype": "Data",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "entry_date",
+   "label": "Record Date",
+   "fieldtype": "Date",
+   "default": "Today",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "due_date",
+   "label": "Due Date",
+   "fieldtype": "Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "reference_no",
+   "label": "Bill / Reference Number",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "territory",
+   "label": "Territory",
+   "fieldtype": "Link",
+   "options": "Territory",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "sales_person",
+   "label": "Sales Person",
+   "fieldtype": "Link",
+   "options": "Sales Person",
+   "in_standard_filter": 1,
+   "read_only": 1,
+   "fetch_from": "customer.sales_person"
+  },
+  {
+   "fieldname": "amount",
+   "label": "Total Amount",
+   "fieldtype": "Currency",
+   "options": "currency",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "amount_received",
+   "label": "Amount Received",
+   "fieldtype": "Currency",
+   "options": "currency",
+   "default": "0",
+   "description": "Total received against this entry, entered manually. Accounting payments are not imported."
+  },
+  {
+   "fieldname": "outstanding_amount",
+   "label": "Remaining Balance",
+   "fieldtype": "Currency",
+   "options": "currency",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "state",
+   "label": "Record State",
+   "fieldtype": "Select",
+   "options": "Active\nCancelled",
+   "default": "Active",
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "remarks",
+   "label": "Remarks",
+   "fieldtype": "Small Text"
+  },
+  {
+   "fieldname": "request_key",
+   "label": "Request Key",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "read_only": 1,
+   "unique": 1,
+   "no_copy": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "Accounts Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "Accounts User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  }
+ ]
+}

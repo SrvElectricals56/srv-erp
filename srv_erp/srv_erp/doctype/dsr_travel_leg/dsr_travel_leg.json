@@ -1,0 +1,91 @@
+{
+ "doctype": "DocType",
+ "name": "DSR Travel Leg",
+ "module": "Srv Erp",
+ "autoname": "hash",
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "field_order": [
+  "account",
+  "employee",
+  "duty",
+  "from_point",
+  "to_point",
+  "distance_km",
+  "duration_seconds"
+ ],
+ "fields": [
+  {
+   "fieldname": "account",
+   "label": "User Account",
+   "fieldtype": "Link",
+   "options": "User",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "employee",
+   "label": "Employee",
+   "fieldtype": "Link",
+   "reqd": 0,
+   "options": "Employee",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "duty",
+   "label": "Duty",
+   "fieldtype": "Link",
+   "options": "DSR Duty Session"
+  },
+  {
+   "fieldname": "from_point",
+   "label": "From Point",
+   "fieldtype": "Link",
+   "options": "DSR GPS Point"
+  },
+  {
+   "fieldname": "to_point",
+   "label": "To Point",
+   "fieldtype": "Link",
+   "unique": 1,
+   "options": "DSR GPS Point"
+  },
+  {
+   "fieldname": "distance_km",
+   "label": "Distance Km",
+   "fieldtype": "Float"
+  },
+  {
+   "fieldname": "duration_seconds",
+   "label": "Duration Seconds",
+   "fieldtype": "Float"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "report": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "Sales Rapl",
+   "read": 1,
+   "report": 1
+  },
+  {
+   "role": "All",
+   "read": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC"
+}

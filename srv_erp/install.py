@@ -58,6 +58,11 @@ def after_install():
 	set_srv_settings_defaults()
 	setup_sales_order_item_approval()
 	sync_brand_master_values_to_attribute()
+	# Installation does not run after_migrate hooks. Initialize the same additive
+	# Smart DSR fields, settings, roles, and indexes on a fresh site.
+	from srv_erp.smart_dsr.setup import execute as setup_smart_dsr
+
+	setup_smart_dsr()
 
 
 def after_migrate():

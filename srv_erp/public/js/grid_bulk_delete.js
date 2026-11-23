@@ -1,4 +1,5 @@
 /* global frappe */
+import Grid from "frappe/public/js/frappe/form/grid";
 
 frappe.provide("srv_erp.grid_bulk_delete");
 
@@ -49,6 +50,6 @@ srv_erp.grid_bulk_delete.remove_selected_rows = async function (grid) {
 	}
 };
 
-frappe.ui.form.Grid.prototype.delete_rows = function () {
+Grid.prototype.delete_rows = function () {
 	return srv_erp.grid_bulk_delete.remove_selected_rows(this);
 };
