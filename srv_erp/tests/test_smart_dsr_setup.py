@@ -30,6 +30,7 @@ class TestSmartDSRInstallation(unittest.TestCase):
 			calls.attach_mock(initialize, "smart_dsr")
 			namespace["after_install"]()
 			initialize.assert_called_once_with()
+		calls.configure_item_group_sales_order_uom.assert_called_once_with()
 		self.assertEqual(calls.mock_calls[-1][0], "smart_dsr")
 
 	def test_vehicle_setup_only_backfills_new_availability_fields(self):
