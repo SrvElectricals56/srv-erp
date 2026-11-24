@@ -4,10 +4,13 @@ from unittest.mock import call, patch
 
 from srv_erp.selling.sales_order_ui import (
 	CURRENT_STOCK_FIELD,
+	DESCRIPTION_FIELD,
+	NARRATION_FIELD,
 	PENDING_QTY_FIELD,
 	SHOW_CURRENT_STOCK_SETTING,
 	SHOW_PENDING_QTY_SETTING,
 	configure_sales_order_current_stock_field,
+	configure_sales_order_note_fields,
 	configure_sales_order_pending_qty_field,
 	get_sales_order_item_stock,
 	set_sales_order_ui_defaults,
@@ -15,6 +18,21 @@ from srv_erp.selling.sales_order_ui import (
 
 
 class TestSalesOrderUI(TestCase):
+	@patch("srv_erp.selling.sales_order_ui.frappe.clear_cache")
+	@patch("srv_erp.selling.sales_order_ui.create_custom_fields")
+	def test_sales_order_note_fields_are_created_below_items(self, create_custom_fields, clear_cache):
+		configure_sales_order_note_fields()
+
+		fields = create_custom_fields.call_args.args[0]["Sales Order"]
+		self.assertEqual(
+			[field["fieldname"] for field in fields],
+			["srv_order_notes_section", NARRATION_FIELD, DESCRIPTION_FIELD],
+		)
+		self.assertEqual(fields[0]["insert_after"], "items")
+		self.assertEqual(fields[1]["fieldtype"], "Small Text")
+		self.assertEqual(fields[2]["fieldtype"], "Text Editor")
+		clear_cache.assert_called_once_with(doctype="Sales Order")
+
 	@patch("srv_erp.selling.sales_order_ui.frappe")
 	def test_pending_qty_column_is_enabled_by_default(self, frappe):
 		frappe.db.get_single_value.side_effect = [None, 0]
