@@ -2,7 +2,6 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
-
 CUSTOM_DISCOUNT_FIELD = "srv_discount_percentage"
 RATE_BEFORE_DISCOUNT_FIELD = "srv_rate_before_discount"
 LAST_DISCOUNT_FIELD = "srv_last_discount_percentage"
@@ -46,8 +45,13 @@ def apply_sales_order_rate_discount(row):
 	last_discount_percentage = flt(row.get(LAST_DISCOUNT_FIELD))
 
 	if discount_percentage:
-		if not base_rate or not is_previous_discounted_rate(row, rate, base_rate, last_discount_percentage):
+		if not base_rate or (
+			rate and not is_previous_discounted_rate(row, rate, base_rate, last_discount_percentage)
+		):
 			base_rate = rate
+
+		if not base_rate and not rate and not last_discount_percentage:
+			return False
 
 		set_row_value(row, RATE_BEFORE_DISCOUNT_FIELD, base_rate)
 		set_row_value(
@@ -58,8 +62,10 @@ def apply_sales_order_rate_discount(row):
 		set_row_value(row, LAST_DISCOUNT_FIELD, discount_percentage)
 		return True
 
-	if base_rate and last_discount_percentage and is_previous_discounted_rate(
-		row, rate, base_rate, last_discount_percentage
+	if (
+		base_rate
+		and last_discount_percentage
+		and is_previous_discounted_rate(row, rate, base_rate, last_discount_percentage)
 	):
 		set_row_value(row, "rate", base_rate)
 		set_row_value(row, RATE_BEFORE_DISCOUNT_FIELD, 0)
@@ -79,7 +85,7 @@ def get_rate_precision(row):
 
 
 def set_row_value(row, fieldname, value):
-	if hasattr(row, "set"):
+	if callable(getattr(row, "set", None)):
 		row.set(fieldname, value)
 	else:
 		row[fieldname] = value
@@ -110,6 +116,8 @@ def create_sales_order_item_rate_discount_custom_fields():
 					"in_list_view": 1,
 					"insert_after": "rate",
 					"label": "Discount (%) on Rate",
+					"default": "0",
+					"no_copy": 1,
 				},
 				{
 					"fieldname": RATE_BEFORE_DISCOUNT_FIELD,
@@ -178,3 +186,26 @@ def set_sales_order_item_discount_grid_columns():
 def migrate_existing_rate_discounts():
 	create_sales_order_item_rate_discount_custom_fields()
 	clear_standard_discount_grid_overrides()
+
+
+def configure_order_local_discount_defaults():
+	"""New and duplicated orders start without discounts; saved orders are untouched."""
+	from frappe.custom.doctype.property_setter.property_setter import make_property_setter
+
+	fields = {
+		"Sales Order": (
+			"custom_discount__as_per_list",
+			"additional_discount_percentage",
+			"discount_amount",
+		),
+		"Sales Order Item": ("discount_percentage", "discount_amount", CUSTOM_DISCOUNT_FIELD),
+	}
+	for doctype, fieldnames in fields.items():
+		for fieldname in fieldnames:
+			if not frappe.get_meta(doctype).has_field(fieldname):
+				continue
+			make_property_setter(doctype, fieldname, "default", "0", "Text")
+			make_property_setter(doctype, fieldname, "no_copy", 1, "Check")
+	# A copied discounted rate would recreate the discount even if its percentage
+	# was cleared. Let ERPNext rebuild it from the copied price list rate instead.
+	make_property_setter("Sales Order Item", "rate", "no_copy", 1, "Check")

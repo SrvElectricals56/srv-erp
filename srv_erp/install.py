@@ -15,11 +15,14 @@ from srv_erp.production.migrate import execute as migrate_production_items
 from srv_erp.production.setup import ensure_roles as ensure_production_roles
 from srv_erp.production.setup import setup_production
 from srv_erp.selling.sales_order_attributes import create_sales_order_attribute_custom_fields
-from srv_erp.selling.sales_order_discount import set_sales_order_item_discount_grid_columns
+from srv_erp.selling.sales_order_discount import (
+	configure_order_local_discount_defaults,
+	set_sales_order_item_discount_grid_columns,
+)
 from srv_erp.selling.sales_order_item_approval_setup import setup_sales_order_item_approval
 from srv_erp.selling.sales_order_ui import (
-	configure_sales_order_note_fields,
 	configure_sales_order_current_stock_field,
+	configure_sales_order_note_fields,
 	configure_sales_order_pending_qty_field,
 	set_sales_order_ui_defaults,
 )
@@ -49,6 +52,7 @@ def after_install():
 	create_maximum_stock_custom_fields()
 	configure_tree_group_list_filters()
 	set_sales_order_item_discount_grid_columns()
+	configure_order_local_discount_defaults()
 	set_sales_order_ui_defaults()
 	configure_sales_order_note_fields()
 	configure_sales_order_pending_qty_field()
@@ -76,6 +80,7 @@ def after_migrate():
 	create_maximum_stock_custom_fields()
 	configure_tree_group_list_filters()
 	set_sales_order_item_discount_grid_columns()
+	configure_order_local_discount_defaults()
 	set_sales_order_ui_defaults()
 	configure_sales_order_note_fields()
 	configure_sales_order_pending_qty_field()
