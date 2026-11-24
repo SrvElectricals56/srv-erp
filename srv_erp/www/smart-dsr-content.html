@@ -1,0 +1,15 @@
+{% extends "templates/web.html" %}
+{% block title %}Smart DSR · SRV Electricals{% endblock %}
+{% block head_include %}
+{% include "srv_erp/templates/includes/smart_dsr_theme.html" %}
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="stylesheet" href="/assets/srv_erp/smart_dsr/app.css?v=party-picker-20261121-15"><link rel="stylesheet" href="/assets/srv_erp/smart_dsr/frappe-theme.css?v=20261119-1">
+{% endblock %}
+{% block page_content %}
+{% if salesperson_home and not smart_dsr_embedded %}<div style="display:flex;justify-content:flex-end;padding:12px"><a class="button" href="/app/home" target="_top">Home</a></div>{% endif %}
+<div id="smart-dsr" aria-live="polite"><div class="skeleton">Loading your workday…</div></div>
+<script>window.smart_dsr_sales_home = {{ salesperson_home | tojson }}; window.smart_dsr_csrf = {{ smart_dsr_csrf_token | tojson }}; window.smart_dsr_user = {{ frappe.session.user | tojson }};</script>
+<script src="/assets/srv_erp/smart_dsr/overdues-page.js?v=20261121-5" defer></script>
+<script src="/assets/srv_erp/smart_dsr/expenses-page.js?v=20261121-3" defer></script>
+<script src="/assets/srv_erp/smart_dsr/party-items-page.js?v=20261121-8" defer></script>
+<script src="/assets/srv_erp/smart_dsr/app.js?v=desk-admin-20261123-2" defer></script>
+{% endblock %}

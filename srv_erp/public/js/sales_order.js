@@ -552,6 +552,19 @@ function refresh_sales_order_item_approval_indicator(frm) {
 	const required = items.length > 0;
 	const is_pending = frm.doc.workflow_state === "Pending";
 	const is_rejected = frm.doc.workflow_state === "Rejected";
+	if (is_pending && frm.doc.brand_filter === "SRV") {
+		frm.dashboard.set_headline_alert(
+			__("SRV orders can be submitted without Administrator approval."), "blue", true
+		);
+		return;
+	}
+	if (is_pending && frm.doc.brand_filter && frappe.session.user !== "Administrator") {
+		frm.dashboard.set_headline_alert(
+			__("This brand requires approval by Administrator before the Sales Order can be submitted."),
+			"orange", true
+		);
+		return;
+	}
 
 	if (is_pending) {
 		frm.page.set_indicator(__("Pending"), "orange");

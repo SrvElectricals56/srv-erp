@@ -11,6 +11,8 @@ from srv_erp.masters.setup import (
 	setup_masters_module,
 )
 from srv_erp.package_barcode.service import DEFAULT_BARCODE_NAMING_SERIES, QTY_RULE_ALLOW_MANUAL
+from srv_erp.patches.add_item_group_sales_order_uom import execute as configure_item_group_sales_order_uom
+from srv_erp.patches.add_sales_order_brand_filter import execute as configure_sales_order_brand_filter
 from srv_erp.production.migrate import execute as migrate_production_items
 from srv_erp.production.setup import ensure_roles as ensure_production_roles
 from srv_erp.production.setup import setup_production
@@ -39,6 +41,8 @@ def before_migrate():
 
 
 def after_install():
+	configure_sales_order_brand_filter()
+	configure_item_group_sales_order_uom()
 	setup_production()
 	ensure_dsr_roles()
 	activate_dynamic_item_creation()
@@ -64,9 +68,16 @@ def after_install():
 	setup_sales_order_item_approval()
 	sync_brand_master_values_to_attribute()
 	ensure_home_workspace_shortcuts()
+	# Installation does not run after_migrate hooks. Initialize the same additive
+	# Smart DSR fields, settings, roles, and indexes on a fresh site.
+	from srv_erp.smart_dsr.setup import execute as setup_smart_dsr
+
+	setup_smart_dsr()
 
 
 def after_migrate():
+	configure_sales_order_brand_filter()
+	configure_item_group_sales_order_uom()
 	setup_production()
 	ensure_dsr_roles()
 	setup_masters_module()

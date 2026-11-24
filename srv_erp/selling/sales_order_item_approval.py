@@ -41,6 +41,16 @@ ACTION_SEND_FOR_APPROVAL = "Send for Approval"
 ACTION_APPROVE = "Approve"
 ACTION_REJECT = "Reject"
 ACTION_CANCEL = "Cancel"
+ACTION_SUBMIT = "Submit"
+
+
+def validate_sales_order_brand_approval(doc, method=None):
+	"""Only Administrator may submit brands other than SRV, including via API."""
+	if doc.get("brand_filter") != "SRV" and frappe.session.user != "Administrator":
+		frappe.throw(
+			_("Sales Orders for brands other than SRV require approval by Administrator."),
+			frappe.PermissionError,
+		)
 
 
 def is_enabled() -> bool:
@@ -130,6 +140,8 @@ def get_items_requiring_approval(doc) -> list[str]:
 
 def requires_item_approval(doc) -> bool:
 	"""Whether the customer-history gate applies to this document at all."""
+	if doc.get("brand_filter") == "SRV":
+		return False
 	if not is_enabled():
 		return False
 
