@@ -68,22 +68,16 @@ class DSR(Document):
 		total_amount: DF.Currency
 		visits: DF.Table[DSRTownVisit]
 
-	def before_insert(self):
-		if not self.get("smart_dsr") and frappe.session.user != "Administrator":
-			frappe.throw("Use Smart DSR Duty ON to create a daily report.", frappe.PermissionError)
-
 	def validate(self) -> None:
 		if self.get("smart_dsr") or (
 			self.get_doc_before_save() and self.get_doc_before_save().get("smart_dsr")
 		):
 			self.validate_smart_dsr()
 			return
-		self.validate_opening_balance_permissions()
 		self.custom_day = getdate(self.date).strftime("%A") if self.date else ""
 		self.set_reading_values()
 		self.set_fuel_quantity()
 		self.set_total_amount()
-		self.set_daily_balance()
 		self.validate_lead_contacts()
 		self.validate_participants()
 		self.validate_audit_state()
@@ -99,7 +93,6 @@ class DSR(Document):
 		if self.get("smart_dsr"):
 			self.validate_smart_dsr()
 			return
-		self.validate_opening_balance_permissions()
 		self.validate_audit_state()
 		self.validate_audit_permissions()
 
