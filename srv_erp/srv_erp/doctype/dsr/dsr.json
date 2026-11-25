@@ -9,7 +9,6 @@
   "editable_grid": 1,
   "engine": "InnoDB",
   "field_order": [
-    "balance_audit_section",
     "payment_audited",
     "audit_col_break_1",
     "payment_rejected",
@@ -23,13 +22,6 @@
     "visited_lead_only",
     "column_break_ol3qz",
     "visited_along_other_sales_person",
-    "balance_section",
-    "opening_balance",
-    "money_collected_total",
-    "fuel_expenses_total",
-    "balance_column_break",
-    "daily_expenses_total",
-    "closing_balance",
     "section_break_rt8eu",
     "dsr_sales_person_accompanied",
     "section_break_gidh3",
@@ -47,9 +39,9 @@
     "section_break_v2ddy",
     "date",
     "custom_day",
+    "sales_person",
     "column_break_fjeif",
     "km_travelled",
-    "sales_person",
     "amount_for_travel",
     "total_amount",
     "section_break_nqzok",
@@ -66,7 +58,15 @@
     "fuel_quantity",
     "section_break_hjwml",
     "miscellaneous_informations",
-    "amended_from"
+    "amended_from",
+    "balance_audit_section",
+    "balance_section",
+    "opening_balance",
+    "money_collected_total",
+    "fuel_expenses_total",
+    "balance_column_break",
+    "daily_expenses_total",
+    "closing_balance"
   ],
   "fields": [
     {
@@ -115,8 +115,7 @@
       "in_standard_filter": 1,
       "label": "Date",
       "permlevel": 1,
-      "reqd": 1,
-      "default": "Today"
+      "reqd": 1
     },
     {
       "fetch_if_empty": 1,
@@ -148,9 +147,7 @@
       "fieldtype": "Currency",
       "label": "Amount for Travel",
       "permlevel": 1,
-      "read_only": 1,
-      "hidden": 1,
-      "print_hide": 1
+      "read_only": 1
     },
     {
       "fieldname": "section_break_nqzok",
@@ -183,18 +180,14 @@
       "label": "Start Reading",
       "non_negative": 1,
       "permlevel": 1,
-      "reqd": 0,
-      "hidden": 1,
-      "read_only": 1
+      "reqd": 1
     },
     {
       "fieldname": "start_reading_pic",
       "fieldtype": "Attach Image",
       "label": "Start Reading Picture",
       "permlevel": 1,
-      "reqd": 0,
-      "hidden": 1,
-      "read_only": 1
+      "reqd": 0
     },
     {
       "fieldname": "end_reading",
@@ -202,28 +195,21 @@
       "label": "End Reading",
       "non_negative": 1,
       "permlevel": 1,
-      "reqd": 0,
-      "hidden": 1,
-      "read_only": 1
+      "reqd": 1
     },
     {
       "fieldname": "end_reading_pic",
       "fieldtype": "Attach Image",
       "label": "End Reading Picture",
       "permlevel": 1,
-      "reqd": 0,
-      "hidden": 1,
-      "read_only": 1
+      "reqd": 0
     },
     {
       "fieldname": "start_reading_image",
       "fieldtype": "Image",
       "label": "Start Reading Image",
       "options": "start_reading_pic",
-      "permlevel": 1,
-      "hidden": 1,
-      "reqd": 0,
-      "read_only": 1
+      "permlevel": 1
     },
     {
       "fieldname": "end_reading_image",
@@ -233,10 +219,7 @@
       "options": "end_reading_pic",
       "permlevel": 1,
       "print_width": "5px",
-      "width": "5px",
-      "hidden": 1,
-      "reqd": 0,
-      "read_only": 1
+      "width": "5px"
     },
     {
       "fieldname": "section_break_rt8eu",
@@ -377,6 +360,7 @@
     {
       "fieldname": "custom_day",
       "fieldtype": "Data",
+      "hidden": 1,
       "label": "Day",
       "read_only": 1
     },
@@ -436,6 +420,7 @@
     {
       "fieldname": "balance_section",
       "fieldtype": "Section Break",
+      "hidden": 1,
       "label": "Daily Balance"
     },
     {
@@ -443,7 +428,7 @@
       "fieldtype": "Currency",
       "label": "Opening Balance",
       "default": "0",
-      "reqd": 1,
+      "hidden": 1,
       "read_only": 1,
       "permlevel": 2
     },
@@ -465,16 +450,19 @@
       "fieldname": "closing_balance",
       "fieldtype": "Currency",
       "label": "Closing Balance",
+      "hidden": 1,
       "read_only": 1,
       "bold": 1
     },
     {
       "fieldname": "balance_column_break",
-      "fieldtype": "Column Break"
+      "fieldtype": "Column Break",
+      "hidden": 1
     },
     {
       "fieldname": "balance_audit_section",
-      "fieldtype": "Section Break"
+      "fieldtype": "Section Break",
+      "hidden": 1
     },
     {
       "fieldname": "money_collected_total",
