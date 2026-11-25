@@ -1,9 +1,45 @@
 from string import Formatter
 
 import frappe
+from frappe import _
 from frappe.contacts.doctype.address.address import render_address
+from frappe.custom.doctype.property_setter.property_setter import make_property_setter
 from frappe.model.rename_doc import get_link_fields
+from frappe.query_builder.functions import Trim, Upper
 from erpnext.accounts.party import get_party_shipping_address
+
+
+def configure_customer_group_required():
+	make_property_setter("Customer", "customer_group", "reqd", 1, "Check")
+	frappe.clear_cache(doctype="Customer")
+
+
+def validate_customer_group_required(doc, method=None):
+	if not (doc.get("customer_group") or "").strip():
+		frappe.throw(_("Please select a Customer Group before saving the Customer."), frappe.MandatoryError)
+
+
+def validate_unique_gstin(doc, method=None):
+	gstin = (doc.get("gstin") or "").strip().upper()
+	if not gstin:
+		return
+
+	doc.gstin = gstin
+	customer = frappe.qb.DocType("Customer")
+
+	query = (
+		frappe.qb.from_(customer)
+		.select(customer.name)
+		.where(Upper(Trim(customer.gstin)) == gstin)
+		.where(customer.name != (doc.name or ""))
+		.limit(1)
+	)
+	duplicates = frappe.db.sql(query.get_sql())
+	if duplicates:
+		frappe.throw(
+			_("GSTIN / UIN {0} is already assigned to another Customer. Please use a unique GSTIN / UIN.").format(gstin),
+			title=_("Duplicate GSTIN / UIN"),
+		)
 
 
 def sync_customer_linked_docs(doc, method):
@@ -67,7 +103,7 @@ def _sync_customer_linked_docs(customer, customer_id=None):
 
 	for doctype, link_fieldnames in link_fields_by_doctype.items():
 		meta = frappe.get_meta(doctype)
-		if meta.is_virtual:
+		if getattr(meta, "is_virtual", False):
 			continue
 
 		for link_fieldname in link_fieldnames:
@@ -186,10 +222,10 @@ def _sync_address_display_for_customer(customer_id, address_name, address_displa
 
 		doctype = link_field["parent"]
 		meta = frappe.get_meta(doctype)
-		if meta.is_virtual:
+		if getattr(meta, "is_virtual", False):
 			continue
 
-		for field in meta.get_link_fields():
+		for field in meta.get_link_fields() or []:
 			if field.options != "Address":
 				continue
 

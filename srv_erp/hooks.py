@@ -38,7 +38,7 @@ app_include_js = [
 	"/assets/srv_erp/js/home_collections.js?v=20261121-4",
 	"/assets/srv_erp/js/salesperson_home.js?v=20261123-1",
 	"/assets/srv_erp/js/sales_person_defaults.js",
-	"/assets/srv_erp/js/customer_quick_entry.js?v=20261114-customer-group-1",
+	"/assets/srv_erp/js/customer_quick_entry.js?v=20261125-customer-group-required",
 	"/assets/srv_erp/js/dynamic_item_request.js",
 	"grid_overrides.bundle.js",
 	"/assets/srv_erp/js/smart_dsr_search.js?v=20261123-1",
@@ -74,6 +74,7 @@ page_js = {
 
 # include js in doctype views
 doctype_js = {
+	"Customer": "public/js/customer.js",
 	"Item": [
 		"public/js/item.js",
 		"public/js/item/variant_select_all_dialog.js",
@@ -230,6 +231,8 @@ after_migrate = ["srv_erp.install.after_migrate"]
 doc_events = {
 	"DocShare": {"validate": "srv_erp.production.permissions.prevent_production_sharing"},
 	"Customer": {
+		"before_validate": "srv_erp.customer.customer.validate_customer_group_required",
+		"validate": "srv_erp.customer.customer.validate_unique_gstin",
 		"on_update": "srv_erp.customer.customer.sync_customer_linked_docs",
 		"after_rename": "srv_erp.customer.customer.sync_customer_linked_docs_after_rename",
 	},
@@ -321,6 +324,13 @@ doc_events = {
 
 scheduler_events = {
 	"daily": ["srv_erp.selling.overdue_reminders.send_overdue_reminders"],
+	"cron": {
+		"*/5 * * * *": [
+			"srv_erp.smart_dsr.api.check_tracking",
+			"srv_erp.smart_dsr.api.check_night_tracking",
+		],
+		"* * * * *": ["srv_erp.smart_dsr.meal_expenses.post_scheduled_meals"],
+	},
 }
 
 # scheduler_events = {
@@ -365,7 +375,7 @@ override_whitelisted_methods = {
 	"erpnext.controllers.item_variant.enqueue_multiple_variant_creation": "srv_erp.masters.dynamic_item.bulk_guard.enqueue_multiple_variant_creation",
 	"erpnext.controllers.item_variant.create_variant_doc_for_quick_entry": "srv_erp.masters.dynamic_item.bulk_guard.create_variant_doc_for_quick_entry",
 	"erpnext.selling.doctype.sales_order.sales_order.make_delivery_note": "srv_erp.selling.delivery_note.make_delivery_note",
-}  #
+}
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
 # along with any modifications made in other Frappe apps
@@ -471,9 +481,6 @@ for _dt in _smart_dsr_types:
 permission_query_conditions["DSR"] = "srv_erp.smart_dsr.security.legacy_query"
 has_permission["DSR"] = "srv_erp.smart_dsr.security.legacy_permission"
 after_migrate.append("srv_erp.smart_dsr.setup.execute")
-scheduler_events["cron"] = {
-	"*/5 * * * *": ["srv_erp.smart_dsr.api.check_tracking", "srv_erp.smart_dsr.api.check_night_tracking"]
-}
 override_doctype_class["File"] = "srv_erp.smart_dsr.file.DSREvidenceFile"
 
 # Explicit DSR control-panel roles; no roles are automatically assigned to Users.
@@ -484,10 +491,6 @@ doc_events["User"] = {
 	event: "srv_erp.smart_dsr.admin_permissions.protect_user_access"
 	for event in ("before_validate", "validate", "before_save")
 }
-
-scheduler_events.setdefault("cron", {}).setdefault("* * * * *", []).append(
-	"srv_erp.smart_dsr.meal_expenses.post_scheduled_meals"
-)
 
 # Scope login landing and Desk home to Sales Person users only.
 after_request = ["srv_erp.smart_dsr.home.login_home"]
