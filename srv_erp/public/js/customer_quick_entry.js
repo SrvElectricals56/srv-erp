@@ -39,6 +39,7 @@
 
 				this.mandatory.splice(insert_at, 0, {
 					...customer_group,
+					reqd: 1,
 					allow_in_quick_entry: 1,
 				});
 			}
