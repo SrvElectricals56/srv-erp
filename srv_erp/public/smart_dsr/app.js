@@ -1278,7 +1278,7 @@
 			);
 		const submit = root.querySelector('[data-action="submit"]');
 		if (submit)
-			submit.disabled = !active() || !s.details.photos.length || !!pendingPhotoLocation();
+			submit.disabled = !active() || !s.details.photo_verified || !!pendingPhotoLocation();
 		const reward = root.querySelector("[data-visit-reward]");
 		if (reward && s.details.visit.reward_started_at && s.details.visit.status === "Open")
 			reward.innerHTML = `Reward timer: ${date(
@@ -1314,8 +1314,11 @@
 			if (
 				visitId() === activity &&
 				s.details?.photos.some((item) => item.name === photo.name)
-			)
+			) {
+				const verificationChanged = s.details.photo_verified !== details.photo_verified;
 				s.details = details;
+				if (verificationChanged) render();
+			}
 		} catch (e) {
 			if (
 				visitId() === activity &&
@@ -1341,7 +1344,7 @@
 		const v = s.details.visit;
 		const read = v.status === "Completed";
 		const info = s.details;
-		const photoReady = info.photos.length > 0;
+		const photoReady = info.photo_verified;
 		let review = {};
 		try {
 			review = JSON.parse(v.dealer_review || "{}");
@@ -1355,7 +1358,7 @@
 		}</span></div><h3>${esc(info.dealer.customer_name)}</h3><p>${esc(
 			info.dealer.mobile_no || "No contact number"
 		)} · ${
-			photoReady || read
+			info.photos.length || read
 				? "Arrival " + date(v.arrived_at)
 				: "Upload a shop photo to start this visit"
 		}${
@@ -1376,6 +1379,10 @@
 		}</p>${
 			photoReady
 				? `<p class="hint">Photo uploaded. Visit services are ready.</p>`
+				: info.photos.length
+				? `<p class="hint">The saved shop photo could not be verified.${
+						read ? "" : " Retake it to use visit services."
+				  }</p>`
 				: `<p class="hint">Upload the live shop photo first to enable visit services. Location is captured with the photo.</p>`
 		}<div class="visit-grid"><section class="subpanel"><h3>Live Shop Photo</h3>${
 			info.photos
@@ -1952,6 +1959,7 @@
 						stopCamera();
 						if (visitId() !== activity) return;
 						s.details.photos = [photo];
+						s.details.photo_verified = true;
 						s.details.visit.arrived_at = photo.captured_at;
 						render();
 						// Keep the saved photo and services usable while location/details finish.
