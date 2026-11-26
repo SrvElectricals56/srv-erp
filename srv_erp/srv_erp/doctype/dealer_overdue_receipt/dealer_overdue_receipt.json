@@ -1,0 +1,152 @@
+{
+ "doctype": "DocType",
+ "name": "Dealer Overdue Receipt",
+ "module": "Srv Erp",
+ "autoname": "format:DUE-REC-{#####}",
+ "track_changes": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "customer",
+  "received_date",
+  "currency",
+  "dues_amount",
+  "amount",
+  "leftover_dues",
+  "reference_no",
+  "remarks",
+  "allocations",
+  "request_key",
+  "dsr_collection",
+  "applied_amount",
+  "unapplied_amount",
+  "reversed",
+  "balance_snapshot_available"
+ ],
+ "fields": [
+  {
+   "fieldname": "customer",
+   "label": "Dealer / Party",
+   "fieldtype": "Link",
+   "options": "Customer",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "received_date",
+   "label": "Received Date",
+   "fieldtype": "Date",
+   "default": "Today",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "currency",
+   "label": "Currency",
+   "fieldtype": "Link",
+   "options": "Currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dues_amount",
+   "label": "Dues Amount",
+   "fieldtype": "Currency",
+   "options": "currency",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "amount",
+   "label": "Received Amount",
+   "fieldtype": "Currency",
+   "options": "currency",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "leftover_dues",
+   "label": "Leftover Dues",
+   "fieldtype": "Currency",
+   "options": "currency",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "reference_no",
+   "label": "Payment Reference",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "remarks",
+   "label": "Remarks",
+   "fieldtype": "Small Text"
+  },
+  {
+   "fieldname": "allocations",
+   "label": "Applied to Overdue Entries",
+   "fieldtype": "Code",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "request_key",
+   "label": "Request Key",
+   "fieldtype": "Data",
+   "reqd": 1,
+   "unique": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "dsr_collection",
+   "label": "Smart DSR Collection",
+   "fieldtype": "Link",
+   "options": "DSR Collection",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "applied_amount",
+   "label": "Applied Amount",
+   "fieldtype": "Currency",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "unapplied_amount",
+   "label": "Unapplied Amount",
+   "fieldtype": "Currency",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reversed",
+   "label": "Reversed",
+   "fieldtype": "Check",
+   "read_only": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "balance_snapshot_available",
+   "label": "Balance Snapshot Available",
+   "fieldtype": "Check",
+   "default": "0",
+   "hidden": 1,
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "Accounts Manager",
+   "read": 1,
+   "create": 1,
+   "export": 1,
+   "print": 1
+  },
+  {
+   "role": "Accounts User",
+   "read": 1,
+   "create": 1,
+   "export": 1,
+   "print": 1
+  }
+ ]
+}

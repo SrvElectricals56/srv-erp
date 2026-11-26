@@ -1,0 +1,16 @@
+{{ include_style('desk.bundle.css') }}
+<script>
+(() => {
+	const mode = {{ (smart_dsr_desk_theme or 'Light') | lower | tojson }};
+	const root = document.documentElement;
+	const system = window.matchMedia('(prefers-color-scheme: dark)');
+	const apply = () => {
+		const theme = mode === 'automatic' ? (system.matches ? 'dark' : 'light') : mode;
+		root.setAttribute('data-theme-mode', mode);
+		root.setAttribute('data-theme', theme);
+		root.style.colorScheme = theme;
+	};
+	apply();
+	system.addEventListener('change', apply);
+})();
+</script>

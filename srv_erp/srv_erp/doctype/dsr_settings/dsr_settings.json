@@ -1,0 +1,201 @@
+{
+ "doctype": "DocType",
+ "name": "DSR Settings",
+ "module": "Srv Erp",
+ "autoname": "hash",
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "field_order": [
+  "company",
+  "cng_rate",
+  "diesel_rate",
+  "petrol_rate",
+  "max_accuracy_m",
+  "max_speed_kmh",
+  "max_gap_seconds",
+  "interruption_minutes",
+  "breakfast_amount",
+  "lunch_amount",
+  "dinner_amount",
+  "meal_min_minutes",
+  "breakfast_start",
+  "breakfast_end",
+  "lunch_start",
+  "lunch_end",
+  "dinner_start",
+  "dinner_end",
+  "manager_user",
+  "geofence_alerts",
+  "cash_account",
+  "bank_account",
+  "retention_days",
+  "retention_policy",
+  "automatic_meal_expenses_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "label": "Company",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Company"
+  },
+  {
+   "fieldname": "cng_rate",
+   "label": "Cng Rate",
+   "fieldtype": "Currency",
+   "default": "4"
+  },
+  {
+   "fieldname": "diesel_rate",
+   "label": "Diesel Rate",
+   "fieldtype": "Currency",
+   "default": "6"
+  },
+  {
+   "fieldname": "petrol_rate",
+   "label": "Petrol Rate",
+   "fieldtype": "Currency",
+   "default": "8"
+  },
+  {
+   "fieldname": "max_accuracy_m",
+   "label": "Max Accuracy M",
+   "fieldtype": "Float",
+   "default": "50"
+  },
+  {
+   "fieldname": "max_speed_kmh",
+   "label": "Max Speed Kmh",
+   "fieldtype": "Float",
+   "default": "160"
+  },
+  {
+   "fieldname": "max_gap_seconds",
+   "label": "Max Gap Seconds",
+   "fieldtype": "Int",
+   "default": "300"
+  },
+  {
+   "fieldname": "interruption_minutes",
+   "label": "Interruption Minutes",
+   "fieldtype": "Int",
+   "default": "10"
+  },
+  {
+   "fieldname": "breakfast_amount",
+   "label": "Breakfast Amount",
+   "fieldtype": "Currency",
+   "default": "100"
+  },
+  {
+   "fieldname": "lunch_amount",
+   "label": "Lunch Amount",
+   "fieldtype": "Currency",
+   "default": "150"
+  },
+  {
+   "fieldname": "dinner_amount",
+   "label": "Dinner Amount",
+   "fieldtype": "Currency",
+   "default": "150"
+  },
+  {
+   "fieldname": "meal_min_minutes",
+   "label": "Meal Min Minutes",
+   "fieldtype": "Int",
+   "default": "20"
+  },
+  {
+   "fieldname": "breakfast_start",
+   "label": "Breakfast Start",
+   "fieldtype": "Int",
+   "default": "6"
+  },
+  {
+   "fieldname": "breakfast_end",
+   "label": "Breakfast End",
+   "fieldtype": "Int",
+   "default": "11"
+  },
+  {
+   "fieldname": "lunch_start",
+   "label": "Lunch Start",
+   "fieldtype": "Int",
+   "default": "12"
+  },
+  {
+   "fieldname": "lunch_end",
+   "label": "Lunch End",
+   "fieldtype": "Int",
+   "default": "16"
+  },
+  {
+   "fieldname": "dinner_start",
+   "label": "Dinner Start",
+   "fieldtype": "Int",
+   "default": "18"
+  },
+  {
+   "fieldname": "dinner_end",
+   "label": "Dinner End",
+   "fieldtype": "Int",
+   "default": "23"
+  },
+  {
+   "fieldname": "manager_user",
+   "label": "Manager User",
+   "fieldtype": "Link",
+   "options": "User"
+  },
+  {
+   "fieldname": "geofence_alerts",
+   "label": "Geofence Alerts",
+   "fieldtype": "Check",
+   "default": "1"
+  },
+  {
+   "fieldname": "cash_account",
+   "label": "Cash Account",
+   "fieldtype": "Link",
+   "options": "Account"
+  },
+  {
+   "fieldname": "bank_account",
+   "label": "Bank Account",
+   "fieldtype": "Link",
+   "options": "Account"
+  },
+  {
+   "fieldname": "retention_days",
+   "label": "Retention Days",
+   "fieldtype": "Int",
+   "default": "365"
+  },
+  {
+   "fieldname": "retention_policy",
+   "label": "Retention Policy",
+   "fieldtype": "Small Text",
+   "default": "Retain GPS and private photo evidence for 365 days. Administrator must review legal holds before manual deletion; financial audit records are retained."
+  },
+  {
+   "fieldname": "automatic_meal_expenses_from",
+   "label": "Automatic Meal Expenses From",
+   "fieldtype": "Date",
+   "read_only": 1,
+   "description": "From this date, scheduled meal expenses replace new break-based meal allowances."
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 0,
+   "report": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "issingle": 1
+}

@@ -80,11 +80,7 @@ async function get_item_sales_order_uom(item_code) {
 		return null;
 	}
 
-	const response = await frappe.db.get_value(
-		"Item",
-		item_code,
-		"item_group"
-	);
+	const response = await frappe.db.get_value("Item", item_code, "item_group");
 
 	const item_group = response.message?.item_group;
 
@@ -113,12 +109,7 @@ async function apply_sales_order_uom(frm, cdt, cdn) {
 	row.__srv_sales_order_uom = allowed_uom;
 
 	if (row.uom !== allowed_uom) {
-		await frappe.model.set_value(
-			cdt,
-			cdn,
-			"uom",
-			allowed_uom
-		);
+		await frappe.model.set_value(cdt, cdn, "uom", allowed_uom);
 	}
 
 	set_sales_order_uom_editability(frm, cdt, cdn, false);
@@ -131,12 +122,7 @@ function copy_parent_value_to_items(frm, fieldname) {
 	}
 
 	(frm.doc.items || []).forEach((row) => {
-		frappe.model.set_value(
-			row.doctype,
-			row.name,
-			fieldname,
-			frm.doc[fieldname]
-		);
+		frappe.model.set_value(row.doctype, row.name, fieldname, frm.doc[fieldname]);
 	});
 }
 
@@ -145,31 +131,16 @@ function set_item_attribute_defaults(frm, cdt, cdn) {
 
 	sales_order_attribute_fields.forEach((fieldname) => {
 		if (frm.doc[fieldname]) {
-			frappe.model.set_value(
-				cdt,
-				cdn,
-				fieldname,
-				frm.doc[fieldname]
-			);
+			frappe.model.set_value(cdt, cdn, fieldname, frm.doc[fieldname]);
 		} else {
-			frm.script_manager.copy_from_first_row(
-				"items",
-				row,
-				[fieldname]
-			);
+			frm.script_manager.copy_from_first_row("items", row, [fieldname]);
 		}
 	});
 }
 
 function copy_item_value_to_all_rows(frm, cdt, cdn, fieldname) {
 	if (!frm.doc[fieldname]) {
-		erpnext.utils.copy_value_in_all_rows(
-			frm.doc,
-			cdt,
-			cdn,
-			"items",
-			fieldname
-		);
+		erpnext.utils.copy_value_in_all_rows(frm.doc, cdt, cdn, "items", fieldname);
 	}
 }
 
@@ -178,15 +149,8 @@ function validate_discount_percentage(cdt, cdn) {
 	const discount_percentage = flt(row[sales_order_rate_discount_field]);
 
 	if (discount_percentage < 0 || discount_percentage > 100) {
-		frappe.model.set_value(
-			cdt,
-			cdn,
-			sales_order_rate_discount_field,
-			0
-		);
-		frappe.throw(
-			__("Discount (%) on Rate must be between 0 and 100.")
-		);
+		frappe.model.set_value(cdt, cdn, sales_order_rate_discount_field, 0);
+		frappe.throw(__("Discount (%) on Rate must be between 0 and 100."));
 	}
 }
 
@@ -198,10 +162,7 @@ function get_previous_discounted_rate(row) {
 		return null;
 	}
 
-	return flt(
-		base_rate * (1 - discount_percentage / 100),
-		precision("rate", row)
-	);
+	return flt(base_rate * (1 - discount_percentage / 100), precision("rate", row));
 }
 
 function is_previous_discounted_rate(row) {
@@ -211,15 +172,12 @@ function is_previous_discounted_rate(row) {
 		return false;
 	}
 
-	return (
-		Math.abs(flt(row.rate) - previous_discounted_rate) <= 0.000001
-	);
+	return Math.abs(flt(row.rate) - previous_discounted_rate) <= 0.000001;
 }
 
 function calculate_discounted_rate(row, base_rate) {
 	return flt(
-		base_rate *
-		(1 - flt(row[sales_order_rate_discount_field]) / 100),
+		base_rate * (1 - flt(row[sales_order_rate_discount_field]) / 100),
 		precision("rate", row)
 	);
 }
@@ -234,8 +192,14 @@ function apply_rate_discount(frm, cdt, cdn) {
 	}
 
 	if (discount_percentage) {
-		if (!base_rate || !is_previous_discounted_rate(row)) {
+		if (!base_rate || (flt(row.rate) && !is_previous_discounted_rate(row))) {
 			base_rate = flt(row.rate);
+		}
+
+		// Item details load asynchronously. Do not turn an unloaded rate into
+		// a zero selling rate (ERPNext interprets that as a 100% discount).
+		if (!base_rate && !flt(row.rate) && !flt(row[sales_order_last_discount_field])) {
+			return;
 		}
 
 		row.__applying_srv_rate_discount = true;
@@ -285,10 +249,7 @@ function schedule_rate_discount(frm, cdt, cdn) {
 
 function refresh_discount_calculated_fields(frm, cdt, cdn) {
 	setTimeout(() => {
-		if (
-			frm.cscript &&
-			frm.cscript.calculate_taxes_and_totals
-		) {
+		if (frm.cscript && frm.cscript.calculate_taxes_and_totals) {
 			frm.cscript.calculate_taxes_and_totals();
 		}
 
@@ -328,8 +289,7 @@ function setup_delivery_item_filter(frm) {
 
 	grid.__srv_unfiltered_get_data = grid.get_data.bind(grid);
 	grid.get_data = function (filter_field) {
-		const data =
-			grid.__srv_unfiltered_get_data(filter_field) || [];
+		const data = grid.__srv_unfiltered_get_data(filter_field) || [];
 
 		if (!frm.__srv_hide_fully_delivered_items) {
 			return data;
@@ -356,10 +316,7 @@ function refresh_sales_order_items_grid(frm) {
 }
 
 function add_delivery_item_filter_button(frm) {
-	[
-		hide_fully_delivered_label,
-		show_fully_delivered_label,
-	].forEach((label) => {
+	[hide_fully_delivered_label, show_fully_delivered_label].forEach((label) => {
 		frm.remove_custom_button(__(label), __("View"));
 	});
 
@@ -374,8 +331,7 @@ function add_delivery_item_filter_button(frm) {
 	frm.add_custom_button(
 		__(label),
 		() => {
-			frm.__srv_hide_fully_delivered_items =
-				!frm.__srv_hide_fully_delivered_items;
+			frm.__srv_hide_fully_delivered_items = !frm.__srv_hide_fully_delivered_items;
 
 			refresh_sales_order_items_grid(frm);
 			add_delivery_item_filter_button(frm);
@@ -388,11 +344,7 @@ function refresh_pending_qty(frm, cdt, cdn) {
 	const row = locals[cdt][cdn];
 
 	update_pending_qty(row);
-	refresh_field(
-		sales_order_pending_qty_field,
-		cdn,
-		"items"
-	);
+	refresh_field(sales_order_pending_qty_field, cdn, "items");
 
 	if (frm.__srv_hide_fully_delivered_items) {
 		refresh_sales_order_items_grid(frm);
@@ -400,16 +352,9 @@ function refresh_pending_qty(frm, cdt, cdn) {
 }
 
 function current_stock_is_enabled() {
-	const field = frappe.meta.get_docfield(
-		"Sales Order Item",
-		sales_order_current_stock_field
-	);
+	const field = frappe.meta.get_docfield("Sales Order Item", sales_order_current_stock_field);
 
-	return Boolean(
-		field &&
-		!cint(field.hidden) &&
-		cint(field.in_list_view)
-	);
+	return Boolean(field && !cint(field.hidden) && cint(field.in_list_view));
 }
 
 function refresh_current_stock(frm) {
@@ -418,12 +363,7 @@ function refresh_current_stock(frm) {
 	}
 
 	const rows = (frm.doc.items || [])
-		.filter(
-			(row) =>
-				row.name &&
-				row.item_code &&
-				row.warehouse
-		)
+		.filter((row) => row.name && row.item_code && row.warehouse)
 		.map((row) => ({
 			name: row.name,
 			item_code: row.item_code,
@@ -434,35 +374,25 @@ function refresh_current_stock(frm) {
 		return;
 	}
 
-	const request_id =
-		(frm.__srv_current_stock_request_id || 0) + 1;
+	const request_id = (frm.__srv_current_stock_request_id || 0) + 1;
 
 	frm.__srv_current_stock_request_id = request_id;
 
 	frappe.call({
-		method:
-			"srv_erp.selling.sales_order_ui.get_sales_order_item_stock",
+		method: "srv_erp.selling.sales_order_ui.get_sales_order_item_stock",
 		args: { rows },
 
 		callback: (response) => {
-			if (
-				request_id !==
-				frm.__srv_current_stock_request_id
-			) {
+			if (request_id !== frm.__srv_current_stock_request_id) {
 				return;
 			}
 
 			const stock_by_row = response.message || {};
 
 			(frm.doc.items || []).forEach((row) => {
-				row[sales_order_current_stock_field] =
-					flt(stock_by_row[row.name]);
+				row[sales_order_current_stock_field] = flt(stock_by_row[row.name]);
 
-				refresh_field(
-					sales_order_current_stock_field,
-					row.name,
-					"items"
-				);
+				refresh_field(sales_order_current_stock_field, row.name, "items");
 			});
 		},
 	});
@@ -471,14 +401,36 @@ function refresh_current_stock(frm) {
 function schedule_current_stock_refresh(frm) {
 	clearTimeout(frm.__srv_current_stock_timer);
 
-	frm.__srv_current_stock_timer = setTimeout(
-		() => refresh_current_stock(frm),
-		250
-	);
+	frm.__srv_current_stock_timer = setTimeout(() => refresh_current_stock(frm), 250);
 }
 
 function setup_sales_order_brand_filter(frm) {
-	frm.set_query("item_code", "items", function () {
+	// Submitted orders use a separate grid in ERPNext's Update Items dialog.
+	$(document)
+		.off("frappe.ui.Dialog:shown.srv_sales_order_brand")
+		.on("frappe.ui.Dialog:shown.srv_sales_order_brand", () => {
+			if (window.cur_frm !== frm) return;
+			const dialog = window.cur_dialog;
+			const grid = dialog?.fields_dict?.trans_items?.grid;
+			if (!grid || typeof dialog.update_items !== "function") return;
+
+			const item_field = grid.docfields.find((df) => df.fieldname === "item_code");
+			if (!item_field || item_field.__srv_brand_filter) return;
+			const original_query = item_field.get_query;
+			item_field.get_query = function (...args) {
+				const brand = frm.doc[sales_order_brand_field];
+				if (!brand) return original_query?.apply(this, args) || {};
+				return {
+					query: "srv_erp.selling.sales_order.get_brand_filtered_items",
+					filters: { brand, is_sales_item: 1 },
+				};
+			};
+			item_field.__srv_brand_filter = true;
+			grid.get_field("item_code").get_query = item_field.get_query;
+			grid.refresh();
+		});
+
+	const get_query = function () {
 		const brand = frm.doc[sales_order_brand_field];
 		if (!brand) {
 			return {};
@@ -490,9 +442,24 @@ function setup_sales_order_brand_filter(frm) {
 				brand: brand,
 			},
 		};
-	});
-}
+	};
+	frm.set_query("item_code", "items", get_query);
 
+	// Controls created during onload retain their own query even after set_query.
+	const grid = frm.fields_dict.items.grid;
+	for (const row of grid.grid_rows || []) {
+		const controls = [
+			row.on_grid_fields_dict?.item_code,
+			row.grid_form?.fields_dict?.item_code,
+		];
+		for (const control of controls) {
+			if (!control) continue;
+			control.get_query = get_query;
+			if (control.$input) control.$input.cache = {};
+			if (control.awesomplete) control.awesomplete.list = [];
+		}
+	}
+}
 
 async function validate_item_varient_brand(frm, cdt, cdn) {
 	const row = locals[cdt][cdn];
@@ -516,21 +483,12 @@ async function validate_item_varient_brand(frm, cdt, cdn) {
 
 		if (!result || !result.allowed) {
 			const entered_item = row.item_code;
-			await frappe.model.set_value(
-				cdt,
-				cdn,
-				"item_code",
-				""
-			);
+			await frappe.model.set_value(cdt, cdn, "item_code", "");
 			frappe.msgprint({
 				title: __("Invalid Item"),
 				message: __(
 					"Item <b>{0}</b> Is not Allowed <b>{1}</b>, Sale Order only allowed <b>{2}</b>.",
-					[
-						entered_item,
-						result?.reason || __("another brand"),
-						brand,
-					]
+					[entered_item, result?.reason || __("another brand"), brand]
 				),
 				indicator: "red",
 			});
@@ -538,7 +496,6 @@ async function validate_item_varient_brand(frm, cdt, cdn) {
 		}
 	}
 }
-
 
 function copy_discount_to_items(frm) {
 	(frm.doc.items || []).forEach((row) => {
@@ -552,11 +509,6 @@ function copy_discount_to_items(frm) {
 }
 
 function set_item_discount_default(frm, cdt, cdn) {
-	console.log("discont provided: ", frm.doc.custom_discount__as_per_list)
-	if (frm.doc.custom_discount__as_per_list == null) {
-		return;
-	}
-
 	frappe.model.set_value(
 		cdt,
 		cdn,
@@ -564,7 +516,6 @@ function set_item_discount_default(frm, cdt, cdn) {
 		flt(frm.doc.custom_discount__as_per_list)
 	);
 }
-
 
 function is_sales_order_closed(frm) {
 	return frm.doc.docstatus === 1 && frm.doc.status === "Closed";
@@ -591,9 +542,9 @@ function refresh_closed_sales_order_indicator(frm) {
 	}
 }
 
-
 function refresh_sales_order_delivery_indicator(frm) {
-	const complete = frm.doc.docstatus === 1 &&
+	const complete =
+		frm.doc.docstatus === 1 &&
 		frm.doc.delivery_status === "Fully Delivered" &&
 		!["Closed", "On Hold", "Cancelled"].includes(frm.doc.status);
 	if (complete) {
@@ -606,6 +557,13 @@ function refresh_sales_order_delivery_indicator(frm) {
 	}
 }
 
+function setup_sales_order_productivity_actions(frm) {
+	frm.add_custom_button(
+		__("Quick Item"),
+		() => window.srv_erp_shortcuts?.create_item(frm),
+		__("Create")
+	);
+}
 
 function get_items_requiring_approval(frm) {
 	return (frm.doc.items || [])
@@ -614,11 +572,9 @@ function get_items_requiring_approval(frm) {
 		.filter(Boolean);
 }
 
-
 function sales_order_item_approval_boot() {
 	return frappe.boot.srv_erp_sales_order_item_approval || {};
 }
-
 
 function user_cannot_self_approve(frm) {
 	const boot = sales_order_item_approval_boot();
@@ -627,7 +583,6 @@ function user_cannot_self_approve(frm) {
 	}
 	return frm.doc.owner === frappe.session.user && frappe.session.user !== "Administrator";
 }
-
 
 function refresh_sales_order_item_approval_indicator(frm) {
 	if (frm.doc.docstatus !== 0) {
@@ -638,6 +593,19 @@ function refresh_sales_order_item_approval_indicator(frm) {
 	const required = items.length > 0;
 	const is_pending = frm.doc.workflow_state === "Pending";
 	const is_rejected = frm.doc.workflow_state === "Rejected";
+	if (is_pending && frm.doc.brand_filter === "SRV") {
+		frm.dashboard.set_headline_alert(
+			__("SRV orders can be submitted without Administrator approval."), "blue", true
+		);
+		return;
+	}
+	if (is_pending && frm.doc.brand_filter && frappe.session.user !== "Administrator") {
+		frm.dashboard.set_headline_alert(
+			__("This brand requires approval by Administrator before the Sales Order can be submitted."),
+			"orange", true
+		);
+		return;
+	}
 
 	if (is_pending) {
 		frm.page.set_indicator(__("Pending"), "orange");
@@ -653,10 +621,7 @@ function refresh_sales_order_item_approval_indicator(frm) {
 			? __("someone with the {0} role", [approver_role])
 			: __("another approver");
 		frm.dashboard.set_headline_alert(
-			__(
-				"You cannot approve your own Sales Order. Ask {0} to review it.",
-				[role_hint]
-			),
+			__("You cannot approve your own Sales Order. Ask {0} to review it.", [role_hint]),
 			"orange",
 			true
 		);
@@ -673,17 +638,18 @@ function refresh_sales_order_item_approval_indicator(frm) {
 	if (is_pending) {
 		message = __("Waiting for approval of new item(s): {0}.", [item_list]);
 	} else if (is_rejected) {
-		message = __("New item(s) were rejected: {0}. Edit the items and send for approval again.", [item_list]);
-	} else {
 		message = __(
-			"New item(s) need approval before this Sales Order can be submitted: {0}.",
+			"New item(s) were rejected: {0}. Edit the items and send for approval again.",
 			[item_list]
 		);
+	} else {
+		message = __("New item(s) need approval before this Sales Order can be submitted: {0}.", [
+			item_list,
+		]);
 	}
 
 	frm.dashboard.set_headline_alert(message, is_rejected ? "red" : "orange", true);
 }
-
 
 frappe.ui.form.on("Sales Order", {
 	setup(frm) {
@@ -694,10 +660,15 @@ frappe.ui.form.on("Sales Order", {
 		setup_delivery_item_filter(frm);
 		setup_sales_order_brand_filter(frm);
 	},
+	onload_post_render(frm) {
+		// Run after the legacy selling controller has installed its default queries.
+		frappe.after_ajax(() => setup_sales_order_brand_filter(frm));
+	},
 	custom_discount__as_per_list(frm) {
 		copy_discount_to_items(frm);
 	},
 	refresh(frm) {
+		setup_sales_order_productivity_actions(frm);
 		refresh_closed_sales_order_indicator(frm);
 		refresh_sales_order_item_approval_indicator(frm);
 		refresh_sales_order_delivery_indicator(frm);
@@ -727,15 +698,15 @@ frappe.ui.form.on("Sales Order", {
 
 frappe.ui.form.on("Sales Order Item", {
 	items_add(frm, cdt, cdn) {
+		set_item_discount_default(frm, cdt, cdn);
 		refresh_pending_qty(frm, cdt, cdn);
 	},
 
 	async item_code(frm, cdt, cdn) {
-		console.log("Row selected: ", cdt, cdn)
-		await validate_item_varient_brand(frm, cdt, cdn)
+		await validate_item_varient_brand(frm, cdt, cdn);
 		set_item_attribute_defaults(frm, cdt, cdn);
-		set_item_discount_default(frm, cdt, cdn)
 		frappe.after_ajax(() => {
+			set_item_discount_default(frm, cdt, cdn);
 			apply_sales_order_uom(frm, cdt, cdn);
 		});
 
@@ -756,47 +727,22 @@ frappe.ui.form.on("Sales Order Item", {
 		const allowed_uom = row.__srv_sales_order_uom;
 
 		if (row.uom !== allowed_uom) {
-			frappe.model.set_value(
-				cdt,
-				cdn,
-				"uom",
-				allowed_uom
-			);
+			frappe.model.set_value(cdt, cdn, "uom", allowed_uom);
 		}
 
-		set_sales_order_uom_editability(
-			frm,
-			cdt,
-			cdn,
-			false
-		);
+		set_sales_order_uom_editability(frm, cdt, cdn, false);
 	},
 
 	branding_type(frm, cdt, cdn) {
-		copy_item_value_to_all_rows(
-			frm,
-			cdt,
-			cdn,
-			"branding_type"
-		);
+		copy_item_value_to_all_rows(frm, cdt, cdn, "branding_type");
 	},
 
 	color(frm, cdt, cdn) {
-		copy_item_value_to_all_rows(
-			frm,
-			cdt,
-			cdn,
-			"color"
-		);
+		copy_item_value_to_all_rows(frm, cdt, cdn, "color");
 	},
 
 	marketed_by(frm, cdt, cdn) {
-		copy_item_value_to_all_rows(
-			frm,
-			cdt,
-			cdn,
-			"marketed_by"
-		);
+		copy_item_value_to_all_rows(frm, cdt, cdn, "marketed_by");
 	},
 
 	price_list_rate: schedule_rate_discount,

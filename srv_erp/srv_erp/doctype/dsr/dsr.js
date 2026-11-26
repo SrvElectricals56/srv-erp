@@ -28,6 +28,11 @@ frappe.ui.form.on("DSR", {
 	},
 
 	refresh(frm) {
+		if (frm.doc.smart_dsr) {
+			frm.disable_save();
+			return;
+		}
+		frm.enable_save();
 		configure_audit_fields(frm);
 		show_audit_status(frm);
 	},
