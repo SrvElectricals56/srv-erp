@@ -83,6 +83,8 @@ def get_brand_filtered_items(
 		"iva.attribute_value = %(brand)s",
 		"i.disabled = 0",
 	]
+	if filters.get("is_sales_item"):
+		conditions.append("i.is_sales_item = 1")
 
 	if txt:
 		conditions.append("""
