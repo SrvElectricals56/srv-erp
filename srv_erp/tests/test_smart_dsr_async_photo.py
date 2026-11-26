@@ -1,6 +1,7 @@
 """The image is durable before GPS arrives; location attachment stays scoped."""
 
 import base64
+import hashlib
 import io
 import unittest
 from datetime import datetime, timedelta
@@ -33,24 +34,36 @@ class TestAsyncPhoto(unittest.TestCase):
 	def test_upload_succeeds_without_gps_and_does_not_start_location_timer(self):
 		image = io.BytesIO()
 		Image.new("RGB", (120, 120), "blue").save(image, format="JPEG")
+		stored = io.BytesIO()
+		Image.new("RGB", (120, 120), "blue").save(stored, format="JPEG", quality=90)
+		stored_bytes = stored.getvalue()
+		self.assertNotEqual(image.getvalue(), stored_bytes)
+		file = Mock(get_content=Mock(return_value=stored_bytes))
 		cache = Mock()
 		cache.get_value.return_value = {"activity": "visit", "account": "user"}
+		evidence = frappe._dict(name="photo", doctype="DSR Dealer Photo Evidence")
+		self.row.customer = "dealer"
+
+		def insert_evidence(doctype, **values):
+			evidence.update(doctype=doctype, **values)
+			return evidence
+
 		with (
 			patch.object(api, "activity_doc", return_value=(self.row, self.doc)),
 			patch.object(frappe, "cache", return_value=cache),
 			patch.object(frappe, "flags", frappe._dict()),
 			patch.object(api, "now_datetime", return_value=self.stamp),
 			patch("frappe.utils.get_system_timezone", return_value="Asia/Kolkata"),
-			patch.object(
-				api,
-				"insert",
-				side_effect=lambda dt, **values: frappe._dict(doctype=dt, name="photo", **values),
-			),
+			patch.object(api, "insert", side_effect=insert_evidence),
 			patch(
 				"frappe.utils.file_manager.save_file",
 				return_value=frappe._dict(file_url="/private/files/shop.jpg"),
 			),
-			patch.object(api, "save"),
+			patch.object(api, "save") as save,
+			patch.object(frappe, "get_all", return_value=[evidence]),
+			patch.object(frappe, "db", Mock(get_value=Mock(return_value="private-file"))),
+			patch.object(frappe, "get_doc", return_value=file),
+			patch.object(frappe, "session", frappe._dict(user="user")),
 			patch.object(api, "location") as gps,
 			patch.object(api, "finish_browser_photo_location") as finish,
 		):
@@ -58,6 +71,23 @@ class TestAsyncPhoto(unittest.TestCase):
 			self.assertEqual(result["photo"], "/private/files/shop.jpg")
 			self.assertEqual(result["capture_source"], "Browser camera pending location")
 			self.assertEqual(self.row.arrived_at, self.stamp)
+			self.assertEqual(evidence.sha256, hashlib.sha256(stored_bytes).hexdigest())
+			save.assert_any_call(evidence)
+			self.assertEqual(api.order_return_reference("visit")["customer"], "dealer")
+			frappe.db.get_value.assert_called_with(
+				"File",
+				{
+					"file_url": "/private/files/shop.jpg",
+					"is_private": 1,
+					"attached_to_doctype": "DSR Dealer Photo Evidence",
+					"attached_to_name": "photo",
+				},
+				"name",
+			)
+			file.get_content.return_value = image.getvalue()
+			self.assertFalse(api.valid_photo("visit", "user"))
+			file.get_content.side_effect = FileNotFoundError
+			self.assertFalse(api.valid_photo("visit", "user"))
 			gps.assert_not_called()
 			finish.assert_not_called()
 

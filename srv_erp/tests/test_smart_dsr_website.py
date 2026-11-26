@@ -72,6 +72,8 @@ class TestWebsite(unittest.TestCase):
 		self.assertEqual(result["accounting_status"], "Recorded")
 
 	def test_private_browser_photo_challenge_and_ownership(self):
+		from unittest.mock import patch
+
 		from PIL import Image
 
 		activity = self.arrive()
@@ -79,12 +81,25 @@ class TestWebsite(unittest.TestCase):
 		with self.assertRaises(frappe.ValidationError):
 			api.browser_photo(activity, challenge, "not-an-image", self.gps)
 		image = io.BytesIO()
-		Image.new("RGB", (120, 120), "white").save(image, format="JPEG")
-		result = api.browser_photo(activity, challenge, base64.b64encode(image.getvalue()).decode(), self.gps)
+		exif = Image.Exif()
+		exif[274] = 6  # EXIF orientation
+		Image.new("RGB", (120, 120), "white").save(image, format="JPEG", exif=exif)
+		get_system_settings = frappe.get_system_settings
+
+		def system_settings(key=None):
+			return True if key == "strip_exif_metadata_from_uploaded_images" else get_system_settings(key)
+
+		with patch.object(frappe, "get_system_settings", side_effect=system_settings):
+			result = api.browser_photo(
+				activity, challenge, base64.b64encode(image.getvalue()).decode(), self.gps
+			)
 		path = Path(frappe.get_site_path("private", "files", result["photo"].rsplit("/", 1)[1]))
 		self.addCleanup(lambda: path.unlink(missing_ok=True))
 		self.assertTrue(result["photo"].startswith("/private/files/"))
+		self.assertNotEqual(path.read_bytes(), image.getvalue())
 		self.assertTrue(api.valid_photo(activity, self.user))
+		self.assertTrue(api.visit_details(activity)["photo_verified"])
+		self.assertEqual(api.order_return_reference(activity)["customer"], self.customer.name)
 		with self.assertRaises(frappe.ValidationError):
 			api.browser_photo(activity, challenge, base64.b64encode(image.getvalue()).decode(), self.gps)
 		api.complete_activity(activity, self.gps)
