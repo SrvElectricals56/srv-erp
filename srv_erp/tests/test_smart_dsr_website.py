@@ -76,7 +76,26 @@ class TestWebsite(unittest.TestCase):
 
 		from PIL import Image
 
-		activity = self.arrive()
+		meter = io.BytesIO()
+		Image.new("RGB", (120, 120), "gray").save(meter, format="JPEG")
+		vehicle, request_key = "PB31AB1234", "start-duty-key"
+		meter_challenge = api.odometer_camera_challenge(
+			"start", 100, vehicle_number=vehicle, request_key=request_key
+		)
+		duty = api.duty_on(
+			vehicle_number=vehicle,
+			gps=self.gps,
+			request_key=request_key,
+			odometer_start=100,
+			odometer_photo={
+				"challenge": meter_challenge,
+				"content": base64.b64encode(meter.getvalue()).decode(),
+			},
+		)["duty"]["name"]
+		meter_url = frappe.db.get_value("DSR Duty Session", duty, "odometer_start_photo")
+		meter_path = Path(frappe.get_site_path("private", "files", meter_url.rsplit("/", 1)[1]))
+		self.addCleanup(lambda: meter_path.unlink(missing_ok=True))
+		activity = api.dealer_arrival(duty, self.customer.name, self.gps, "arrival-website")
 		challenge = api.browser_photo_challenge(activity)
 		with self.assertRaises(frappe.ValidationError):
 			api.browser_photo(activity, challenge, "not-an-image", self.gps)
