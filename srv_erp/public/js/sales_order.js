@@ -478,7 +478,32 @@ function schedule_current_stock_refresh(frm) {
 }
 
 function setup_sales_order_brand_filter(frm) {
-	frm.set_query("item_code", "items", function () {
+	// Submitted orders use a separate grid in ERPNext's Update Items dialog.
+	$(document)
+		.off("frappe.ui.Dialog:shown.srv_sales_order_brand")
+		.on("frappe.ui.Dialog:shown.srv_sales_order_brand", () => {
+			if (window.cur_frm !== frm) return;
+			const dialog = window.cur_dialog;
+			const grid = dialog?.fields_dict?.trans_items?.grid;
+			if (!grid || typeof dialog.update_items !== "function") return;
+
+			const item_field = grid.docfields.find((df) => df.fieldname === "item_code");
+			if (!item_field || item_field.__srv_brand_filter) return;
+			const original_query = item_field.get_query;
+			item_field.get_query = function (...args) {
+				const brand = frm.doc[sales_order_brand_field];
+				if (!brand) return original_query?.apply(this, args) || {};
+				return {
+					query: "srv_erp.selling.sales_order.get_brand_filtered_items",
+					filters: { brand, is_sales_item: 1 },
+				};
+			};
+			item_field.__srv_brand_filter = true;
+			grid.get_field("item_code").get_query = item_field.get_query;
+			grid.refresh();
+		});
+
+	const get_query = function () {
 		const brand = frm.doc[sales_order_brand_field];
 		if (!brand) {
 			return {};
@@ -490,7 +515,23 @@ function setup_sales_order_brand_filter(frm) {
 				brand: brand,
 			},
 		};
-	});
+	};
+	frm.set_query("item_code", "items", get_query);
+
+	// Controls created during onload retain their own query even after set_query.
+	const grid = frm.fields_dict.items.grid;
+	for (const row of grid.grid_rows || []) {
+		const controls = [
+			row.on_grid_fields_dict?.item_code,
+			row.grid_form?.fields_dict?.item_code,
+		];
+		for (const control of controls) {
+			if (!control) continue;
+			control.get_query = get_query;
+			if (control.$input) control.$input.cache = {};
+			if (control.awesomplete) control.awesomplete.list = [];
+		}
+	}
 }
 
 
@@ -702,6 +743,10 @@ frappe.ui.form.on("Sales Order", {
 		frm.__srv_hide_fully_delivered_items = false;
 		setup_delivery_item_filter(frm);
 		setup_sales_order_brand_filter(frm);
+	},
+	onload_post_render(frm) {
+		// Run after the legacy selling controller has installed its default queries.
+		frappe.after_ajax(() => setup_sales_order_brand_filter(frm));
 	},
 	custom_discount__as_per_list(frm) {
 		copy_discount_to_items(frm);
