@@ -109,19 +109,14 @@ export function inject_shortcut_styles() {
 			outline: 1px solid var(--gray-500);
 			outline-offset: 1px;
 		}
-		.form-tabs-list .form-tabs .nav-item .nav-link[role="tab"] {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			justify-content: center;
-			min-height: 48px;
-			padding: 7px 14px;
-			margin: 0 2px;
-			border-bottom: 2px solid transparent;
-			background-color: transparent;
+		.form-tabs-list .form-tabs {
+			scrollbar-width: none;
+			-ms-overflow-style: none;
 		}
-		.form-tabs-list .form-tabs .nav-item .nav-link[role="tab"]:hover {
-			color: var(--text-color);
+		.form-tabs-list .form-tabs::-webkit-scrollbar {
+			display: none;
+			width: 0;
+			height: 0;
 		}
 		.form-tabs-list .form-tabs .nav-item .nav-link[role="tab"].active {
 			border-bottom: 2px solid var(--text-color);
@@ -132,19 +127,14 @@ export function inject_shortcut_styles() {
 			border-bottom: 3px solid var(--text-color);
 		}
 		.form-tabs-list.srv-erp-tab-navigation {
-			display: flex;
-			align-items: center;
-			gap: 8px;
-		}
-		.srv-erp-tab-navigation > .form-tabs {
-			flex: 1;
-			min-width: 0;
+			display: block;
 		}
 		.srv-erp-form-tab-shortcut-hint {
-			flex: 0 0 auto;
-			padding-inline-end: 12px;
+			display: block;
+			padding: 2px 12px 3px;
+			text-align: end;
 			color: var(--text-muted);
-			font-size: 11px;
+			font-size: 9px;
 			line-height: 1.25;
 			white-space: nowrap;
 		}
@@ -157,8 +147,7 @@ export function inject_shortcut_styles() {
 			background-color: var(--control-bg);
 			box-shadow: inset 0 0 0 1px var(--dark-border-color);
 		}
-		.form-layout .srv-erp-form-section-shortcut-hint,
-		.form-layout .srv-erp-form-field-shortcut-hint {
+		.form-layout .srv-erp-form-section-shortcut-hint {
 			display: block;
 			margin-top: 2px;
 			font-size: 8px;

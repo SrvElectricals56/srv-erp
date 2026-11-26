@@ -8,6 +8,10 @@ let column_picker = null;
 let expects_column_picker = false;
 let edited_row = null;
 
+function current_dialog() {
+	return frappe.ui?.open_dialogs?.at(-1) || window.cur_dialog;
+}
+
 function dialog_element(dialog) {
 	return dialog?.$wrapper?.get?.(0);
 }
@@ -31,7 +35,25 @@ function controls_for(scope, dialog) {
 	const selector = dialog
 		? `.modal-body ${INPUTS.split(", ").join(", .modal-body ")}, .modal-footer button, .add-new-fields, .remove-field`
 		: `${INPUTS}, button`;
-	return [...scope.querySelectorAll(selector)].filter(can_focus);
+	return [...scope.querySelectorAll(selector)].filter(can_focus).map((control) => {
+		if (control.matches(".add-new-fields, .remove-field")) {
+			control.setAttribute("role", "button");
+			control.setAttribute("tabindex", "0");
+			if (control.matches(".remove-field") && !control.getAttribute("aria-label")) {
+				const fieldname = control.dataset.fieldname || __("column");
+				control.setAttribute("aria-label", __("Remove {0} column", [fieldname]));
+			}
+			return control;
+		}
+		if (control.tabIndex < 0 && !control.hasAttribute("tabindex")) {
+			control.setAttribute("tabindex", "-1");
+		}
+		return control;
+	});
+}
+
+function top_visible_modal() {
+	return [...document.querySelectorAll(".modal.show")].filter(is_visible).at(-1) || null;
 }
 
 function focus_settings(dialog, preferred) {
@@ -56,7 +78,7 @@ export function bind_grid_settings_events() {
 		}
 	}, true);
 	$(document).on("frappe.ui.Dialog:shown.srv_grid_navigation", () => {
-		const dialog = window.cur_dialog;
+		const dialog = current_dialog();
 		if (dialog === settings_dialog && dialog) {
 			focus_settings(dialog, ".column-width");
 		} else if (expects_column_picker && dialog?.fields_dict?.fields?.df?.fieldtype === "MultiCheck") {
@@ -140,12 +162,38 @@ function next_control(controls, target, arrow) {
 	return nearest || controls[index + step];
 }
 
+function next_settings_control(controls, target, arrow) {
+	const index = controls.indexOf(target);
+	if (index < 0) {
+		return controls[0];
+	}
+	if (arrow === "ArrowUp" || arrow === "ArrowDown") {
+		const step = arrow === "ArrowUp" ? -1 : 1;
+		return controls[(index + step + controls.length) % controls.length];
+	}
+	return next_control(controls, target, arrow);
+}
+
+function grid_dialog_surface(target) {
+	const modal = target?.closest?.(".modal.show") ||
+		(target === document.body ? top_visible_modal() : null);
+	if (!modal) {
+		return null;
+	}
+	const settings = modal === dialog_element(settings_dialog) ||
+		Boolean(modal.querySelector(".selected-fields, .add-new-fields"));
+	const picker = modal === dialog_element(column_picker) ||
+		Boolean(settings_dialog && modal.querySelector(".unit-checkbox input"));
+	return settings || picker ? { scope: modal, settings } : null;
+}
+
 export function handle_grid_surface_keys(event) {
-	const dialog = window.cur_dialog;
+	const dialog = current_dialog();
 	const edit_scope = row_editor_scope(edited_row);
-	const is_grid_dialog = Boolean(dialog && (dialog === settings_dialog || dialog === column_picker));
-	const scope = is_grid_dialog ? dialog_element(dialog) :
-		!dialog || dialog_element(dialog)?.contains(edit_scope) ? edit_scope : null;
+	const dialog_surface = grid_dialog_surface(event.target);
+	const is_grid_dialog = Boolean(dialog_surface);
+	const scope = dialog_surface?.scope ||
+		((!dialog || dialog_element(dialog)?.contains(edit_scope)) ? edit_scope : null);
 	if (!scope || !is_visible(scope) ||
 		(event.target !== document.body && !scope.contains(event.target) && !is_grid_dialog)) {
 		return false;
@@ -170,12 +218,23 @@ export function handle_grid_surface_keys(event) {
 	consume_key(event);
 	if (event.key === "Enter") {
 		if (!event.repeat && current?.matches(ACTIONS)) {
+			const current_index = controls.indexOf(current);
 			current.click();
+			window.requestAnimationFrame(() => {
+				if (top_visible_modal() === scope && is_visible(scope) &&
+					!scope.contains(document.activeElement)) {
+					const refreshed = controls_for(scope, is_grid_dialog);
+					focus_control(refreshed[Math.min(current_index, refreshed.length - 1)]);
+				}
+			});
 		} else if (!event.repeat) {
 			focus_control(controls[current ? controls.indexOf(current) + 1 : 0]);
 		}
 	} else {
-		focus_control(next_control(controls, current, event.key));
+		const next = dialog_surface?.settings
+			? next_settings_control(controls, current, event.key)
+			: next_control(controls, current, event.key);
+		focus_control(next);
 	}
 	return true;
 }

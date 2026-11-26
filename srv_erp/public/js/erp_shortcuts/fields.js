@@ -77,19 +77,6 @@ export function focus_named_field(field) {
 	return input;
 }
 
-export function focus_section_description(frm, section) {
-	const description = section?.fields_list?.find((field) =>
-		field.disp_status === "Write" && field.df?.fieldname === "description"
-	);
-	const editor = description && field_input(description);
-	if (is_visible(editor) && editor.matches('textarea, input, [contenteditable="true"]') &&
-		!editor.matches(":disabled, [readonly], [aria-disabled=true]")) {
-		focus_form_input(editor, section);
-		return editor;
-	}
-	return focus_first_field(frm, null, section);
-}
-
 function focus_form_input(input, section) {
 	reset_field_navigation();
 	selected_input = input;

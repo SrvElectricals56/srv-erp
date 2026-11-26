@@ -34,7 +34,11 @@ export function decorate_grid_hints(active_grid) {
 		if (!is_visible(wrapper)) {
 			continue;
 		}
-		place_hint(wrapper.querySelector(":scope > label.control-label"), "Alt+M", __("Focus table cells (Alt+M)"));
+		const label = wrapper.querySelector(":scope > label.control-label");
+		label?.querySelector(`:scope > .${HINT_CLASS}`)?.remove();
+		if (label?.getAttribute("aria-keyshortcuts") === "Alt+M") {
+			label.removeAttribute("aria-keyshortcuts");
+		}
 		for (const row of grid.grid_rows || []) {
 			place_hint(row?.open_form_button?.get?.(0)?.closest(".btn-open-row"), "Alt+E", __("Edit row (Alt+E)"), true);
 		}

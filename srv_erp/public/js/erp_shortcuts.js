@@ -36,10 +36,19 @@ function handle_keyboard(event) {
 	if (event.defaultPrevented || event.isComposing) {
 		return;
 	}
+	const form_tab_shortcut = is_alt_key(event, "KeyM");
+	if (form_tab_shortcut) {
+		handle_form_keyboard(event);
+		if (event.defaultPrevented) {
+			return;
+		}
+	}
 	if (handle_grid_keyboard(event)) {
 		return;
 	}
-	handle_form_keyboard(event);
+	if (!form_tab_shortcut) {
+		handle_form_keyboard(event);
+	}
 	if (event.defaultPrevented || handle_page_keyboard(event)) {
 		return;
 	}

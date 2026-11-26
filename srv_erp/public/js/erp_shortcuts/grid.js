@@ -129,6 +129,15 @@ function focus_first_cell(grid) {
 	}
 }
 
+export function focus_grid_from_target(target) {
+	const grid = get_grid_from_target(target);
+	if (!is_grid_in_current_surface(grid)) {
+		return false;
+	}
+	focus_first_cell(grid);
+	return true;
+}
+
 function selected_row(grid, target) {
 	const row_element = target?.closest?.(".grid-row");
 	const focused_row = row_element ? $(row_element).data("grid_row") : null;
