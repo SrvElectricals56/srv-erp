@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 import frappe
 from frappe import _
 from frappe.model.document import Document
@@ -128,27 +126,7 @@ class SRVProductionEntry(Document):
 		return sources
 
 	def before_submit(self):
-		sources = self.lock_sources()
-		totals = defaultdict(float)
-		for row in self.items:
-			totals[row.assignment] += row.qty
-		for name, qty in totals.items():
-			if flt(submitted_qty(name, exclude=self.name) + qty, 6) > flt(sources[name].target_qty, 6):
-				rows = ", ".join(str(row.idx) for row in self.items if row.assignment == name)
-				pending = max(sources[name].target_qty - submitted_qty(name, exclude=self.name), 0)
-				frappe.throw(
-					_(
-						"Entry row(s) {0}: item {1}, scheduled {2}, operation {3} has {4} {5} pending; this entry records {6}. Reduce Produced Qty or refresh the entry."
-					).format(
-						rows,
-						escape_html(sources[name].item_code or sources[name].template),
-						sources[name].planned_date,
-						escape_html(sources[name].work_area or "Production"),
-						pending,
-						escape_html(sources[name].uom),
-						qty,
-					)
-				)
+		self.lock_sources()
 		self.status = "Submitted"
 
 	def on_submit(self):
