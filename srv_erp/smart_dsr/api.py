@@ -1100,7 +1100,9 @@ def dealer_arrival(duty, customer, gps=None, request_key=None):
 
 def require_visit_photo(row, account):
 	if not valid_photo(row.name, account):
-		frappe.throw("Upload a live shop photo before using visit services.")
+		frappe.throw(
+			"Upload a live shop photo before using visit services. If a photo is already shown, retake it."
+		)
 
 
 def activity_doc(activity):
@@ -1285,33 +1287,38 @@ def retake_visit_photo(activity):
 	return browser_photo_challenge(activity)
 
 
+def visit_photo_content(evidence):
+	if not evidence.photo:
+		return None
+	file = frappe.db.get_value(
+		"File",
+		{
+			"file_url": evidence.photo,
+			"is_private": 1,
+			"attached_to_doctype": "DSR Dealer Photo Evidence",
+			"attached_to_name": evidence.name,
+		},
+		"name",
+	)
+	if file:
+		try:
+			content = frappe.get_doc("File", file).get_content()
+			if isinstance(content, bytes) and content:
+				return content
+		except (OSError, frappe.DoesNotExistError):
+			pass
+	return None
+
+
 def valid_photo(activity, account):
 	for evidence in frappe.get_all(
 		"DSR Dealer Photo Evidence",
 		filters={"activity": activity, "account": account},
 		fields=["name", "photo", "sha256"],
 	):
-		file = (
-			frappe.db.get_value(
-				"File",
-				{
-					"file_url": evidence.photo,
-					"is_private": 1,
-					"attached_to_doctype": "DSR Dealer Photo Evidence",
-					"attached_to_name": evidence.name,
-				},
-				"name",
-			)
-			if evidence.photo
-			else None
-		)
-		if file:
-			try:
-				content = frappe.get_doc("File", file).get_content()
-				if hashlib.sha256(content).hexdigest() == evidence.sha256:
-					return True
-			except (OSError, frappe.DoesNotExistError):
-				continue
+		content = visit_photo_content(evidence)
+		if content and hashlib.sha256(content).hexdigest() == evidence.sha256:
+			return True
 	return False
 
 
@@ -2525,6 +2532,7 @@ def visit_details(activity):
 	return public_dates(
 		{
 			"visit": visit,
+			"photo_verified": valid_photo(row.name, doc.account),
 			"dealer": {
 				"name": customer.name,
 				"customer_name": customer.customer_name,
@@ -2597,7 +2605,6 @@ def browser_photo(activity, challenge, image_base64, gps=None):
 		**point,
 		captured_at=now_datetime(),
 		received_at=now_datetime(),
-		sha256=hashlib.sha256(data).hexdigest(),
 		capture_source="Browser camera" if point else "Browser camera pending location",
 		challenge=challenge,
 	)
@@ -2610,6 +2617,11 @@ def browser_photo(activity, challenge, image_base64, gps=None):
 	finally:
 		frappe.flags.smart_dsr_evidence_write = previous
 	evidence.photo = file.file_url
+	# Frappe can rewrite JPEGs while saving. Verify the bytes in private storage.
+	stored = visit_photo_content(evidence)
+	if not stored:
+		frappe.throw("The shop photo could not be verified in storage. Capture it again.")
+	evidence.sha256 = hashlib.sha256(stored).hexdigest()
 	save(evidence)
 	if point:
 		finish_browser_photo_location(row, doc, evidence, point)

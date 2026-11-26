@@ -73,6 +73,7 @@ const assert = require("assert/strict");
             visit: { name: "visit-test", duty: "duty-test", status: "Open" },
             dealer: { customer_name: "Dealer" },
             photos,
+            photo_verified: photos.length > 0,
             orders: [],
             collections: [],
             outstanding: { currency: "INR", overdue: 0 },

@@ -42,12 +42,14 @@ const fs = require("fs"),
       origin_activity: "origin-internal-id",
     };
     let photos = [],
+      photoVerified = false,
       upload,
       locationData;
     const details = () => ({
       visit,
       dealer: { customer_name: "Dealer" },
       photos,
+      photo_verified: photoVerified,
       orders: [{ name: "order-internal-id", grand_total: 1000 }],
       collections: [
         {
@@ -110,6 +112,7 @@ const fs = require("fs"),
           },
         ];
         message = photos[0];
+        photoVerified = true;
       }
       if (method === "browser_photo_location") {
         locationData = r.request().postDataJSON();
@@ -123,6 +126,10 @@ const fs = require("fs"),
           arrived_at: "2026-11-18T10:00:00+05:30",
         });
         message = details();
+      }
+      if (method === "order_return_reference") {
+        assert.deepEqual(r.request().postDataJSON(), { activity: "visit" });
+        message = { token: "order-token", activity: "visit", customer: "dealer" };
       }
       return r.fulfill({ json: { message } });
     });
@@ -140,6 +147,7 @@ const fs = require("fs"),
         body: `<meta charset="utf-8"><style>${css}</style><div id="smart-dsr"></div><script>${source}</script>`,
       })
     );
+    await page.route("**/app/sales-order/new-sales-order", (r) => r.fulfill({ body: "Sales Order" }));
     await page.goto("http://localhost/async-photo-test#visit/visit");
     await page
       .getByRole("button", { name: "Open Camera", exact: true })
@@ -220,6 +228,19 @@ const fs = require("fs"),
     await page.locator("#dsr-dialog[open]").waitFor();
     assert.match(await page.locator("#dsr-dialog").innerText(), /DUE-MANUAL-1/);
     assert.match(await page.locator("#dsr-dialog").innerText(), /Manual Entry/);
+    photoVerified = false;
+    await page.reload();
+    await page.getByText(/saved shop photo could not be verified/).waitFor();
+    assert.equal(await page.getByRole("button", { name: "Make Order" }).isDisabled(), true);
+    await page.getByRole("button", { name: "Retake Photo" }).waitFor();
+    photoVerified = true;
+    await page.reload();
+    await page.getByRole("button", { name: "Make Order" }).click();
+    await page.waitForURL("**/app/sales-order/new-sales-order");
+    assert.deepEqual(
+      await page.evaluate(() => JSON.parse(sessionStorage.getItem("dsr-order-return"))),
+      { token: "order-token", activity: "visit", customer: "dealer" }
+    );
     assert.deepEqual(errors, []);
     console.log(
       "PASS: photo uploads while GPS unresolved; services unlock on saved image; Submit waits for location; failure retains photo; retry attaches GPS and details beside photo without full-page loading. Mocked camera/GPS/API fixtures."
