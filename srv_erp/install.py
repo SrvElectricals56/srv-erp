@@ -32,6 +32,7 @@ from srv_erp.selling.sales_order_ui import (
 from srv_erp.selling.sales_person_user_mapping import sync_all_sales_person_user_permissions
 from srv_erp.stock.stock_balance_report import use_srv_stock_balance_report
 from srv_erp.tree_group_filters import configure_tree_group_list_filters
+from srv_erp.user_occasions import setup_user_occasion_fields
 from srv_erp.workspace import ensure_home_workspace_shortcuts
 
 
@@ -42,6 +43,7 @@ def before_migrate():
 
 
 def after_install():
+	setup_user_occasion_fields()
 	configure_customer_group_required()
 	configure_customer_personal_dates()
 	configure_sales_order_brand_filter()
@@ -79,6 +81,7 @@ def after_install():
 
 
 def after_migrate():
+	setup_user_occasion_fields()
 	configure_customer_group_required()
 	configure_customer_personal_dates()
 	configure_sales_order_brand_filter()
