@@ -202,69 +202,6 @@ class TestProductionScheduling(FrappeTestCase):
 			}
 		).insert()
 
-	def test_update_plan_adds_and_removes_dated_rows(self):
-		from srv_erp.production.updates import get_plan, update_plan
-
-		schedule, _ = self.schedule()
-		before = get_plan(schedule.name)
-		added = dict(before[0], item=before[0].item_code or before[0].template, planned_date="2026-10-09", target_qty=7)
-		result = update_plan(schedule.name, [], "Add dated work", added=[added])
-		self.assertEqual(result, {"updated": 0, "added": 1, "deleted": 0})
-		current = get_plan(schedule.name)
-		self.assertEqual(len(current), len(before) + 1)
-		new_row = next(row for row in current if row.name not in {row.name for row in before})
-		self.assertEqual(schedule.reload().items[0].planned_qty, 37)
-		update_plan(schedule.name, [], "Remove dated work", deleted=[new_row])
-		self.assertEqual(len(get_plan(schedule.name)), len(before))
-		self.assertEqual(frappe.db.get_value(ASSIGNMENT, new_row.name, "status"), "Cancelled")
-		self.assertEqual(schedule.reload().items[0].planned_qty, 30)
-
-	def test_update_plan_adds_new_item_and_variant(self):
-		from srv_erp.production.updates import get_plan, update_plan
-
-		schedule, _ = self.schedule()
-		before = get_plan(schedule.name)
-		with patch("srv_erp.masters.dynamic_item.guard.validate_dynamic_item_insert"):
-			template = frappe.copy_doc(frappe.get_doc("Item", self.template))
-			template.item_code = self.template + "-Extra-" + frappe.generate_hash(length=6)
-			template.insert()
-			variant = frappe.copy_doc(frappe.get_doc("Item", self.variant))
-			variant.item_code = template.name + "-V"
-			variant.variant_of = template.name
-			variant.insert()
-		added = dict(before[0], item=template.name, item_code=variant.name, planned_date="2026-10-09", target_qty=7)
-		self.assertEqual(update_plan(schedule.name, [], added=[added])["added"], 1)
-		new = next(row for row in get_plan(schedule.name) if row.name not in {row.name for row in before})
-		self.assertEqual((new.template, new.item_code), (template.name, variant.name))
-		child = frappe.get_doc("SRV Production Schedule Item", new.schedule_item)
-		self.assertEqual((child.parent, child.docstatus, child.planned_qty), (schedule.name, 1, 7))
-		bad = dict(added, item=self.template, planned_date="2026-10-10")
-		with self.assertRaisesRegex(frappe.ValidationError, "belonging"):
-			update_plan(schedule.name, [], added=[bad])
-		self.assertEqual(len(get_plan(schedule.name)), len(before) + 1)
-
-	def test_update_plan_rejects_added_duplicate_without_saving_edits(self):
-		from srv_erp.production.updates import get_plan, update_plan
-
-		schedule, _ = self.schedule()
-		rows = get_plan(schedule.name)
-		added = dict(rows[0], item=rows[0].item_code or rows[0].template)
-		rows[1].target_qty = 15
-		with self.assertRaisesRegex(frappe.ValidationError, "collision"):
-			update_plan(schedule.name, [rows[1]], "Add duplicate", added=[added])
-		self.assertEqual(frappe.db.get_value(ASSIGNMENT, rows[1].name, "target_qty"), 10)
-		self.assertEqual(len(get_plan(schedule.name)), len(rows))
-
-	def test_update_plan_cannot_remove_referenced_row(self):
-		from srv_erp.production.updates import get_plan, update_plan
-
-		schedule, names = self.schedule()
-		self.entry(names[0], 4).submit()
-		row = next(row for row in get_plan(schedule.name) if row.name == names[0])
-		with self.assertRaisesRegex(frappe.ValidationError, "referenced"):
-			update_plan(schedule.name, [], "Remove produced work", deleted=[row])
-		self.assertNotEqual(frappe.db.get_value(ASSIGNMENT, names[0], "status"), "Cancelled")
-
 	def test_update_plan_after_production_preserves_entry_and_rolls_up(self):
 		from srv_erp.production.updates import get_plan, update_plan
 
@@ -346,24 +283,13 @@ class TestProductionScheduling(FrappeTestCase):
 		rows[1].planned_date = first_date
 		self.assertEqual(update_plan(schedule.name, rows[:2], "Swap days"), {"updated": 2})
 
-	def test_update_plan_saves_without_reason(self):
+	def test_update_plan_requires_reason_valid_fields_and_distinct_rows(self):
 		from srv_erp.production.updates import get_plan, update_plan
 
 		schedule, _ = self.schedule()
 		row = get_plan(schedule.name)[0]
-		row.target_qty += 1
-		self.assertEqual(update_plan(schedule.name, [row]), {"updated": 1})
-		assignment = frappe.get_doc(ASSIGNMENT, row.name)
-		self.assertIn("Update Submitted Production Plan", assignment.change_reason)
-		row = next(plan for plan in get_plan(schedule.name) if plan.name == row.name)
-		row.target_qty += 1
-		self.assertEqual(update_plan(schedule.name, [row], " "), {"updated": 1})
-
-	def test_update_plan_requires_valid_fields_and_distinct_rows(self):
-		from srv_erp.production.updates import get_plan, update_plan
-
-		schedule, _ = self.schedule()
-		row = get_plan(schedule.name)[0]
+		with self.assertRaisesRegex(frappe.ValidationError, "reason"):
+			update_plan(schedule.name, [row], " ")
 		with self.assertRaisesRegex(frappe.ValidationError, "No dates"):
 			update_plan(schedule.name, [row], "No changes")
 		with self.assertRaisesRegex(frappe.ValidationError, "repeated assignment"):
@@ -452,10 +378,8 @@ class TestProductionScheduling(FrappeTestCase):
 		self.assertEqual(frappe.get_doc(ASSIGNMENT, names[0]).remaining_qty, 6)
 		second = self.entry(names[0], 6).submit()
 		self.assertEqual(frappe.get_doc(ASSIGNMENT, names[0]).status, "Completed")
-		extra = self.entry(names[0], 1).submit()
-		self.assertEqual(submitted_qty(names[0]), 11)
-		self.assertEqual(frappe.get_doc(ASSIGNMENT, names[0]).remaining_qty, 0)
-		extra.cancel()
+		with self.assertRaises(frappe.ValidationError):
+			self.entry(names[0], 1).submit()
 		second.cancel()
 		self.assertEqual(frappe.get_doc(ASSIGNMENT, names[0]).completed_qty, 4)
 		self.assertEqual(frappe.get_doc(ASSIGNMENT, names[0]).status, "In Progress")
@@ -682,15 +606,6 @@ class TestProductionScheduling(FrappeTestCase):
 		choices = production_item_query("Item", "", "name", 0, 100, {"assignment": fixed.assignment})
 		self.assertEqual([row[0] for row in choices], [fixed.item_code])
 
-	def test_production_item_picker_without_assignment(self):
-		from srv_erp.production.service import production_item_query
-
-		choices = production_item_query("Item", self.variant, "name", 0, 100, {})
-		self.assertIn(self.variant, {row[0] for row in choices})
-		frappe.db.set_value("Item", self.variant, "disabled", 1)
-		choices = production_item_query("Item", self.variant, "name", 0, 100, {})
-		self.assertNotIn(self.variant, {row[0] for row in choices})
-
 	def test_multi_item_variant_plan_mapping_and_progress(self):
 		from srv_erp.production.service import make_production_entry
 
@@ -744,7 +659,7 @@ class TestProductionScheduling(FrappeTestCase):
 		self.assertEqual(schedule.reload().percent_completed, 100)
 		self.assertEqual(submitted_qty(row.assignment), 10)
 
-	def test_multi_item_duplicate_rows_can_exceed_one_source_target(self):
+	def test_multi_item_duplicate_rows_cannot_exceed_one_source_target(self):
 		from srv_erp.production.service import make_production_entry
 
 		schedule = self.multi_schedule(rows=[{"template": self.template, "qty_per_occurrence": 10}])
@@ -753,10 +668,9 @@ class TestProductionScheduling(FrappeTestCase):
 		entry.append(
 			"items", {"assignment": entry.items[0].assignment, "item_code": self.second_variant(), "qty": 6}
 		)
-		entry.insert().submit()
-		self.assertEqual(submitted_qty(entry.items[0].assignment), 12)
-		self.assertEqual(schedule.reload().percent_completed, 100)
-		entry.cancel()
+		entry.insert()
+		with self.assertRaises(frappe.ValidationError):
+			entry.submit()
 		self.assertEqual(submitted_qty(entry.items[0].assignment), 0)
 
 	def test_multi_item_schedule_rejects_invalid_variant_and_duplicates(self):
@@ -1514,7 +1428,7 @@ class TestProductionScheduling(FrappeTestCase):
 		self.assertEqual({row.completed_qty for row in schedule.items}, {10, 20})
 		self.assertEqual(frappe.get_doc(ENTRY, entry.name).docstatus, 1)
 
-	def test_overproduction_records_actual_quantity_and_cancellation_restores_pending(self):
+	def test_overproduction_error_names_output_row_date_and_pending_quantity(self):
 		from srv_erp.production.service import make_production_entry
 
 		schedule = self.multi_schedule(
@@ -1522,13 +1436,11 @@ class TestProductionScheduling(FrappeTestCase):
 		)
 		entry = make_production_entry(schedule.name)
 		entry.items[0].qty = 11
-		entry.insert().submit()
-		source = frappe.get_doc(ASSIGNMENT, entry.items[0].assignment)
-		self.assertEqual((source.completed_qty, source.remaining_qty, source.status), (11, 0, "Completed"))
-		self.assertEqual(schedule.reload().percent_completed, 100)
-		entry.cancel()
-		source.reload()
-		self.assertEqual((source.completed_qty, source.remaining_qty, source.status), (0, 10, "Planned"))
+		entry.insert()
+		with self.assertRaisesRegex(
+			frappe.ValidationError, r"Entry row\(s\) 1:.*2026-10-01.*10.*pending.*11"
+		):
+			entry.submit()
 
 	def test_migration_preserves_preexisting_submitted_overlapping_recurrence(self):
 		from srv_erp.production.migrate import execute

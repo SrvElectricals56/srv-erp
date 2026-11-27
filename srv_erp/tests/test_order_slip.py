@@ -269,36 +269,9 @@ class TestOrderSlipHelpers(FrappeTestCase):
 
 		self.assertIn("SO-0001", html)
 		self.assertIn("ITEM-001: First Item", html)
-		self.assertNotIn("rowspan=", html)
+		self.assertIn('rowspan="3"', html)
 		self.assertEqual(html.count("Customer Name"), 1)
 		self.assertNotIn("CUST-0001", html)
-
-	def test_long_order_slip_uses_page_safe_rows(self):
-		items = [
-			SimpleNamespace(
-				item_code=f"ITEM-{index:03d}",
-				item_name=f"Long Order Item {index}",
-				qty=1,
-				uom="Nos",
-				stock_uom="Nos",
-				rate=100,
-			)
-			for index in range(1, 41)
-		]
-		order = SimpleNamespace(
-			name="SO-LONG-0001", transaction_date="2026-11-26", currency="INR",
-			total=4000, grand_total=4720, customer_name="Long Order Customer", items=items,
-		)
-
-		html = frappe.render_template(
-			"srv_erp/templates/order_slip_ledger.html",
-			{"orders": [order], "date_heading": "26-11-2026", "grand_total": 4720, "currency": "INR"},
-		)
-
-		self.assertNotIn("rowspan=", html)
-		self.assertIn("table, tbody { break-inside: auto; page-break-inside: auto; }", html)
-		self.assertEqual(html.count("Long Order Item"), 40)
-		self.assertEqual(html.count('class="date continuation-cell"'), 40)
 
 	def test_parse_order_names_preserves_selection_order_and_removes_duplicates(self):
 		self.assertEqual(

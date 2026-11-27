@@ -6,7 +6,6 @@ from frappe.contacts.doctype.address.address import render_address
 from frappe.custom.doctype.property_setter.property_setter import make_property_setter
 from frappe.model.rename_doc import get_link_fields
 from frappe.query_builder.functions import Trim, Upper
-from frappe.utils import cint
 from erpnext.accounts.party import get_party_shipping_address
 
 
@@ -26,23 +25,19 @@ def validate_unique_gstin(doc, method=None):
 		return
 
 	doc.gstin = gstin
-	if cint(doc.get("disabled")):
-		return
-
 	customer = frappe.qb.DocType("Customer")
 
 	query = (
 		frappe.qb.from_(customer)
 		.select(customer.name)
 		.where(Upper(Trim(customer.gstin)) == gstin)
-		.where(customer.disabled == 0)
 		.where(customer.name != (doc.name or ""))
 		.limit(1)
 	)
 	duplicates = frappe.db.sql(query.get_sql())
 	if duplicates:
 		frappe.throw(
-			_("GSTIN / UIN {0} is already assigned to another enabled Customer. Please use a unique GSTIN / UIN.").format(gstin),
+			_("GSTIN / UIN {0} is already assigned to another Customer. Please use a unique GSTIN / UIN.").format(gstin),
 			title=_("Duplicate GSTIN / UIN"),
 		)
 

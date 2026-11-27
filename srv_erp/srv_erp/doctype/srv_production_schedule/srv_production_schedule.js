@@ -49,50 +49,30 @@ frappe.ui.form.on("SRV Production Schedule", {
 					.map(
 						(row) => `<tr>
 					<td>${escape(row.row)}</td><td>${escape(row.item_code || row.template)}</td>
-					<td class="text-nowrap">${escape(row.from_date)}</td><td class="text-nowrap">${escape(
-							row.to_date
-						)}</td>
+					<td class="text-nowrap">${escape(row.from_date)}</td><td class="text-nowrap">${escape(row.to_date)}</td>
 					<td>${escape(row.frequency)}</td><td>${escape(row.occurrence_count)}</td>
 					<td>${escape(row.qty_per_occurrence)}</td><td>${escape(row.planned_qty)} ${escape(row.uom)}</td>
-				</tr>`
+				</tr>`,
 					)
 					.join("");
 				const details = message.items
 					.map(
 						(row) => `<details class="mb-3">
-					<summary>${__("Row")} ${escape(row.row)} · ${escape(row.item_code || row.template)} · ${escape(
-							row.occurrence_count
-						)} ${row.occurrence_count === 1 ? __("date") : __("dates")}</summary>
-					<table class="table table-bordered mt-2"><thead><tr><th>${__("Schedule Date")}</th><th>${__(
-							"Qty / Date"
-						)}</th><th>${__("UOM")}</th></tr></thead>
-					<tbody>${row.dates
-						.map(
-							(date) =>
-								`<tr><td>${escape(date)}</td><td>${escape(
-									row.qty_per_occurrence
-								)}</td><td>${escape(row.uom)}</td></tr>`
-						)
-						.join("")}</tbody></table>
-				</details>`
+					<summary>${__("Row")} ${escape(row.row)} · ${escape(row.item_code || row.template)} · ${escape(row.occurrence_count)} ${row.occurrence_count === 1 ? __("date") : __("dates")}</summary>
+					<table class="table table-bordered mt-2"><thead><tr><th>${__("Schedule Date")}</th><th>${__("Qty / Date")}</th><th>${__("UOM")}</th></tr></thead>
+					<tbody>${row.dates.map((date) => `<tr><td>${escape(date)}</td><td>${escape(row.qty_per_occurrence)}</td><td>${escape(row.uom)}</td></tr>`).join("")}</tbody></table>
+				</details>`,
 					)
 					.join("");
 				const preview = new frappe.ui.Dialog({
 					title: __("Production Schedule Preview"),
 					size: "extra-large",
 				});
-				preview.$body.html(`<p>${__("Production Dates")}: ${escape(
-					message.dates.length
-				)} · ${__("Dated Item Assignments")}: ${escape(message.assignment_count)}</p>
-					<p>${__("Responsibilities")}: ${
-					message.responsibilities
-						.map((role) => `${escape(role.supervisor)} · ${escape(role.work_area)}`)
-						.join(", ") || __("Template defaults")
-				}</p>
+				preview.$body
+					.html(`<p>${__("Production Dates")}: ${escape(message.dates.length)} · ${__("Dated Item Assignments")}: ${escape(message.assignment_count)}</p>
+					<p>${__("Responsibilities")}: ${message.responsibilities.map((role) => `${escape(role.supervisor)} · ${escape(role.work_area)}`).join(", ") || __("Template defaults")}</p>
 					<div class="table-responsive"><table class="table table-bordered"><thead><tr>
-					${["Row", "Item", "From Date", "To Date", "Frequency", "Dates", "Qty / Date", "Total Planned"]
-						.map((label) => `<th>${__(label)}</th>`)
-						.join("")}
+					${["Row", "Item", "From Date", "To Date", "Frequency", "Dates", "Qty / Date", "Total Planned"].map((label) => `<th>${__(label)}</th>`).join("")}
 					</tr></thead><tbody>${rows}</tbody></table></div>${details}`);
 				preview.show();
 			});
@@ -107,7 +87,7 @@ frappe.ui.form.on("SRV Production Schedule", {
 					frappe.route_options = { schedule: frm.doc.name };
 					frappe.set_route("List", "SRV Production Assignment");
 				},
-				__("View")
+				__("View"),
 			);
 			frm.add_custom_button(
 				__("Assignments Calendar"),
@@ -115,7 +95,7 @@ frappe.ui.form.on("SRV Production Schedule", {
 					frappe.route_options = { schedule: frm.doc.name };
 					frappe.set_route("List", "SRV Production Assignment", "Calendar");
 				},
-				__("View")
+				__("View"),
 			);
 			frm.add_custom_button(
 				__("Production Entries"),
@@ -123,7 +103,7 @@ frappe.ui.form.on("SRV Production Schedule", {
 					frappe.route_options = { schedule: frm.doc.name };
 					frappe.set_route("List", "SRV Production Entry");
 				},
-				__("View")
+				__("View"),
 			);
 			if (frm.doc.status !== "Completed") {
 				frm.add_custom_button(
@@ -165,7 +145,7 @@ frappe.ui.form.on("SRV Production Schedule", {
 													"in",
 													areas(
 														dialog?.get_value("supervisor") ||
-															message.supervisors[0]
+															message.supervisors[0],
 													),
 												],
 											},
@@ -189,10 +169,10 @@ frappe.ui.form.on("SRV Production Schedule", {
 									args: values,
 								}),
 							__("Create Production Entry"),
-							__("Create")
+							__("Create"),
 						);
 					},
-					__("Create")
+					__("Create"),
 				);
 				frm.page.set_inner_btn_group_as_primary(__("Create"));
 			}
@@ -284,7 +264,7 @@ async function srv_production_update_defaults(frm, field) {
 	const defaults = srv_production_defaults(frm);
 	const previous = frm._planning_defaults || {};
 	const required = ["from_date", "to_date", "frequency", "interval", "recurrence_unit"].includes(
-		key
+		key,
 	);
 	for (const row of frm.doc.items || []) {
 		if (row[key] == null || (required && row[key] === "") || row[key] === previous[key]) {
@@ -300,9 +280,9 @@ async function srv_production_edit_plan(frm) {
 		method: method + "get_plan",
 		args: { schedule: frm.doc.name },
 	});
-
+	if (!rows.length) return frappe.msgprint(__("This schedule has no active dated plans."));
 	for (const row of rows) {
-		row.item = row.template;
+		row.item = row.item_code || row.template;
 		row.idx = row.row_number;
 	}
 	const original = new Map(rows.map((row) => [row.name, { ...row }]));
@@ -313,9 +293,7 @@ async function srv_production_edit_plan(frm) {
 			{
 				fieldtype: "HTML",
 				fieldname: "help",
-				options: `<p>${__(
-					"Edit dated plans below, or select rows and apply common values. Target Qty is the total required, including produced quantity. Recorded production stays unchanged. Original item ranges remain as the submission record; Dated Plans and the calendar show current work."
-				)}</p>`,
+				options: `<p>${__("Edit dated plans below, or select rows and apply common values. Target Qty is the total required, including produced quantity. Recorded production stays unchanged. Original item ranges remain as the submission record; Dated Plans and the calendar show current work.")}</p>`,
 			},
 			{ fieldtype: "Section Break", label: __("Apply to Selected Rows") },
 			{ fieldtype: "Date", fieldname: "new_date", label: __("New Schedule Date") },
@@ -329,25 +307,6 @@ async function srv_production_edit_plan(frm) {
 			},
 			{ fieldtype: "Column Break" },
 			{ fieldtype: "Float", fieldname: "new_target", label: __("New Total Target Qty") },
-			{ fieldtype: "Section Break" },
-			{
-				fieldtype: "Small Text",
-				fieldname: "current_operations",
-				label: __("Operation"),
-				read_only: 1,
-				default: [...new Set(rows.map((row) => row.work_area).filter(Boolean))].join(", "),
-			},
-			{ fieldtype: "Column Break" },
-			{
-				fieldtype: "Small Text",
-				fieldname: "current_supervisors",
-				label: __("Supervisor"),
-				read_only: 1,
-				default: [...new Set(rows.map((row) => row.supervisor).filter(Boolean))].join(
-					", "
-				),
-			},
-			{ fieldtype: "Column Break" },
 			{
 				fieldtype: "Button",
 				fieldname: "apply_selected",
@@ -363,7 +322,7 @@ async function srv_production_edit_plan(frm) {
 					};
 					if (!values.new_date && !values.new_supervisor && !values.new_target)
 						return frappe.msgprint(
-							__("Enter a new date, supervisor or target to apply.")
+							__("Enter a new date, supervisor or target to apply."),
 						);
 					for (const row of selected) {
 						if (values.new_date) row.planned_date = values.new_date;
@@ -379,54 +338,24 @@ async function srv_production_edit_plan(frm) {
 				fieldname: "rows",
 				fieldtype: "Table",
 				label: __("Dated Plans"),
-				cannot_add_rows: false,
-				cannot_delete_rows: false,
-				on_add_row() {
-					const row = dialog.fields_dict.rows.df.data.at(-1);
-					row.planned_date = dialog.get_value("new_date") || frappe.datetime.get_today();
-					row.supervisor =
-						dialog.get_value("new_supervisor") ||
-						rows[0]?.supervisor ||
-						frm.doc.responsibilities?.[0]?.supervisor;
-					row.work_area =
-						rows[0]?.work_area ||
-						frm.doc.responsibilities?.[0]?.work_area ||
-						"Production";
-					row.target_qty = dialog.get_value("new_target") || 1;
-					row.completed_qty = 0;
-					dialog.fields_dict.rows.grid.refresh();
-				},
+				cannot_add_rows: true,
+				cannot_delete_rows: true,
 				in_place_edit: false,
 				data: rows,
 				fields: [
 					{
 						fieldname: "item",
-						fieldtype: "Link",
-						options: "Item",
+						fieldtype: "Data",
 						label: __("Item"),
-						reqd: 1,
-						get_query: () => ({ filters: { has_variants: 1, disabled: 0 } }),
-						onchange() {
-							this.doc.item_code = "";
-							this.grid_row.refresh_field("item_code");
-						},
+						read_only: 1,
 						in_list_view: 1,
 						columns: 2,
 					},
 					{
-						fieldname: "item_code",
-						fieldtype: "Link",
-						options: "Item",
-						label: __("Variant"),
-						get_query: (doc) => ({
-							filters: {
-								variant_of: doc.item || "__select_template_first__",
-								has_variants: 0,
-								disabled: 0,
-							},
-						}),
-						in_list_view: 1,
-						columns: 3,
+						fieldname: "item_name",
+						fieldtype: "Data",
+						label: __("Item Name"),
+						read_only: 1,
 					},
 					{
 						fieldname: "work_area",
@@ -434,7 +363,7 @@ async function srv_production_edit_plan(frm) {
 						options: "Operation",
 						label: __("Operation"),
 						read_only: 1,
-						in_list_view: 0,
+						in_list_view: 1,
 						columns: 1,
 					},
 					{
@@ -451,7 +380,7 @@ async function srv_production_edit_plan(frm) {
 						options: "User",
 						label: __("Supervisor"),
 						reqd: 1,
-						in_list_view: 0,
+						in_list_view: 1,
 						columns: 2,
 						get_query: () => ({
 							query: "srv_erp.production.service.supervisor_query",
@@ -462,7 +391,7 @@ async function srv_production_edit_plan(frm) {
 						onchange() {
 							this.doc.remaining_qty = flt(
 								this.doc.target_qty - this.doc.completed_qty,
-								6
+								6,
 							);
 							this.grid_row.refresh_field("remaining_qty");
 						},
@@ -478,39 +407,33 @@ async function srv_production_edit_plan(frm) {
 						label: __("Produced"),
 						read_only: 1,
 						in_list_view: 1,
-						columns: 2,
+						columns: 1,
 					},
 					{
 						fieldname: "remaining_qty",
 						fieldtype: "Float",
 						label: __("Remaining"),
 						read_only: 1,
-						in_list_view: 0,
+						in_list_view: 1,
 						columns: 1,
 					},
 					{ fieldname: "status", fieldtype: "Data", label: __("Status"), read_only: 1 },
 					{ fieldname: "uom", fieldtype: "Data", label: __("UOM"), read_only: 1 },
 				],
 			},
+			{ fieldtype: "Section Break", label: __("Change Record") },
+			{
+				fieldtype: "Small Text",
+				fieldname: "reason",
+				label: __("Reason for Update"),
+				reqd: 1,
+			},
 		],
 		primary_action_label: __("Save Plan Updates"),
 		async primary_action(values) {
-			const current = values.rows || [];
-			const added = current.filter((row) => !original.has(row.name));
-			const deleted = [...original.values()].filter(
-				(before) => !current.some((row) => row.name === before.name)
-			);
-			const changed = current
+			const changed = values.rows
 				.filter((row) => {
 					const before = original.get(row.name);
-					if (!before) return false;
-					if (
-						row.item !== before.item ||
-						(row.item_code || "") !== (before.item_code || "")
-					)
-						frappe.throw(
-							__("To change an existing item, delete its row and add a new row.")
-						);
 					return (
 						row.planned_date !== before.planned_date ||
 						row.supervisor !== before.supervisor ||
@@ -526,16 +449,11 @@ async function srv_production_edit_plan(frm) {
 					supervisor: row.supervisor,
 					target_qty: row.target_qty,
 				}));
-			if (!changed.length && !added.length && !deleted.length)
-				return frappe.msgprint(__("Add, delete or update a dated plan first."));
+			if (!changed.length)
+				return frappe.msgprint(__("Change a date, supervisor or target first."));
 			const { message } = await frappe.call({
 				method: method + "update_plan",
-				args: {
-					schedule: frm.doc.name,
-					rows: changed,
-					added,
-					deleted,
-				},
+				args: { schedule: frm.doc.name, rows: changed, reason: values.reason },
 				freeze: true,
 				freeze_message: __("Updating production plan…"),
 				btn: dialog.get_primary_btn(),
@@ -543,11 +461,7 @@ async function srv_production_edit_plan(frm) {
 			dialog.hide();
 			await frm.reload_doc();
 			frappe.show_alert({
-				message: __("Saved: {0} updated, {1} added, {2} deleted", [
-					message.updated,
-					message.added || 0,
-					message.deleted || 0,
-				]),
+				message: __("Updated {0} dated plans", [message.updated]),
 				indicator: "green",
 			});
 		},
@@ -556,7 +470,7 @@ async function srv_production_edit_plan(frm) {
 	dialog.$wrapper
 		.addClass("srv-production-plan-update")
 		.append(
-			"<style>.modal.srv-production-plan-update .form-grid .row-index { display: flex; }</style>"
+			"<style>.modal.srv-production-plan-update .form-grid .row-index { display: flex; }</style>",
 		);
 	dialog.show();
 }

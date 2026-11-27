@@ -60,60 +60,60 @@ def validate_no_pending_sales_order(doc, method=None):
 		+
 		"<br>".join(order_lines)
 	)
-
-
+ 
+ 
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
 def get_brand_filtered_items(
-    doctype,
-    txt,
-    searchfield,
-    start,
-    page_len,
-    filters=None,
+	doctype,
+	txt,
+	searchfield,
+	start,
+	page_len,
+	filters=None,
 ):
-    filters = frappe.parse_json(filters) if filters else {}
-    brand = filters.get("brand")
+	filters = frappe.parse_json(filters) if filters else {}
+	brand = filters.get("brand")
 
-    if not brand:
-        return []
+	if not brand:
+		return []
 
-    conditions = [
-        "i.disabled = 0",
-        "(iva.parent IS NULL OR iva.attribute_value = %(brand)s)",
-    ]
+	conditions = [
+		"iva.attribute = 'Brand'",
+		"iva.attribute_value = %(brand)s",
+		"i.disabled = 0",
+	]
+	if filters.get("is_sales_item"):
+		conditions.append("i.is_sales_item = 1")
 
-    if txt:
-        conditions.append("""
-            (
-                i.name LIKE %(txt)s
-                OR i.item_name LIKE %(txt)s
-            )
-        """)
+	if txt:
+		conditions.append("""
+			(
+				i.name LIKE %(txt)s
+				OR i.item_name LIKE %(txt)s
+			)
+		""")
 
-    return frappe.db.sql(
-        f"""
-        SELECT DISTINCT
-            i.name,
-            i.item_name
-        FROM `tabItem` i
-        LEFT JOIN `tabItem Variant Attribute` iva
-            ON iva.parent = i.name
-            AND iva.parenttype = 'Item'
-            AND iva.attribute = 'Brand'
-        WHERE {" AND ".join(conditions)}
-        ORDER BY i.name
-        LIMIT %(start)s, %(page_len)s
-        """,
-        {
-            "brand": brand,
-            "txt": f"%{txt}%",
-            "start": cint(start),
-            "page_len": cint(page_len),
-        },
-    )
-
-
+	return frappe.db.sql(
+		f"""
+		SELECT DISTINCT
+			i.name,
+			i.item_name
+		FROM `tabItem Variant Attribute` iva
+		INNER JOIN `tabItem` i
+			ON i.name = iva.parent
+		WHERE {" AND ".join(conditions)}
+		ORDER BY i.name
+		LIMIT %(start)s, %(page_len)s
+		""",
+		{
+			"brand": brand,
+			"txt": f"%{txt}%",
+			"start": cint(start),
+			"page_len": cint(page_len),
+		},
+	) 
+ 
 @frappe.whitelist()
 def validate_sales_order_item_brand(item_code, brand):
     if not item_code or not brand:
