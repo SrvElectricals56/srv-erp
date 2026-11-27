@@ -7,6 +7,27 @@ from srv_erp.customer.customer import validate_unique_gstin
 
 
 class TestCustomerGSTIN(TestCase):
+	@patch("srv_erp.customer.customer.frappe.db", new_callable=MagicMock)
+	def test_disabled_customer_allows_duplicate_without_query(self, db):
+		for disabled in (1, "1"):
+			doc = frappe._dict(name="CUST-001", gstin=" 27aapfu0939f1zv ", disabled=disabled)
+			validate_unique_gstin(doc)
+			self.assertEqual(doc.gstin, "27AAPFU0939F1ZV")
+		db.sql.assert_not_called()
+
+	@patch("srv_erp.customer.customer.frappe.db", new_callable=MagicMock)
+	def test_enabled_customer_checks_only_other_enabled_customers(self, db):
+		from frappe.query_builder.builder import MariaDB
+
+		db.sql.return_value = []
+		with patch("srv_erp.customer.customer.frappe.qb", MariaDB):
+			validate_unique_gstin(
+				frappe._dict(name="CUST-001", gstin="27AAPFU0939F1ZV", disabled=0)
+			)
+		query = db.sql.call_args.args[0]
+		self.assertIn("`disabled`=0", query)
+		self.assertIn("`name`<>'CUST-001'", query)
+
 	@patch("srv_erp.customer.customer.frappe.qb", new_callable=MagicMock)
 	def test_blank_gstin_does_not_check_duplicates(self, qb):
 		for value in (None, "", "   "):
