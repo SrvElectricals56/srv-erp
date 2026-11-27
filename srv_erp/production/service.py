@@ -336,16 +336,11 @@ def submitted_qty(assignment, exclude=None):
 def refresh_schedule_progress(schedule):
 	rows = frappe.db.sql(
 		"""SELECT schedule_item, responsibility, occurrence_key, target_qty, completed_qty, status, planned_date
-		FROM `tabSRV Production Assignment` WHERE schedule=%s AND status != 'Cancelled' FOR UPDATE""",
+		FROM `tabSRV Production Assignment` WHERE schedule=%s FOR UPDATE""",
 		schedule,
 		as_dict=True,
 	)
-	grouped = {
-		name: []
-		for name in frappe.get_all(
-			"SRV Production Schedule Item", filters={"parent": schedule}, pluck="name"
-		)
-	}
+	grouped = {}
 	for row in rows:
 		grouped.setdefault(row.schedule_item, []).append(row)
 	remaining_items = 0
@@ -519,16 +514,7 @@ def get_assignment_details(assignment):
 def production_item_query(doctype, txt, searchfield, start, page_len, filters):
 	filters = frappe.parse_json(filters) or {}
 	if not filters.get("assignment"):
-		return frappe.get_list(
-			"Item",
-			filters={"disabled": 0},
-			or_filters={"name": ["like", f"%{txt}%"], "item_name": ["like", f"%{txt}%"]},
-			fields=["name", "item_name"],
-			order_by="name",
-			limit_start=start,
-			limit_page_length=page_len,
-			as_list=True,
-		)
+		return []
 	source = frappe.get_doc(ASSIGNMENT, filters["assignment"])
 	source.check_permission("read")
 	allowed = [source.item_code or source.template]

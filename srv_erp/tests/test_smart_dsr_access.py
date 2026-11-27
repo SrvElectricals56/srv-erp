@@ -45,6 +45,7 @@ class TestSmartDSRAccess(unittest.TestCase):
 				with (
 					patch.object(frappe, "session", frappe._dict(user=user)),
 					patch.object(frappe, "local", frappe._dict(flags=frappe._dict())),
+					patch.object(frappe, "form_dict", {"desk": "1"}),
 					patch.object(frappe, "db", db),
 					patch.object(frappe, "get_roles", return_value=roles),
 					patch.object(frappe, "throw", side_effect=self.throw),

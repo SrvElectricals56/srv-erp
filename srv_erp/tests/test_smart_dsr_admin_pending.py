@@ -66,6 +66,7 @@ class TestAdminPendingDuty(unittest.TestCase):
 		self.audit, self.save = Mock(), Mock()
 		self.expense = Mock(return_value={"name": "expense-1"})
 		self.inserted = []
+		self.stored_digest = hashlib.sha256(b"stored photo bytes").hexdigest()
 
 		def insert(dt, **values):
 			row = Row(doctype=dt, name="evidence-1", **values)
@@ -80,7 +81,12 @@ class TestAdminPendingDuty(unittest.TestCase):
 			(resolution.admin, "audit", self.audit),
 			(resolution.api, "settings", Mock(return_value=Row(max_accuracy_m=50))),
 			(resolution.api, "record_expense_document", self.expense),
-			(resolution, "attach_photo", Mock(return_value="/private/files/admin.png")),
+			(
+				resolution,
+				"store_private_photo",
+				Mock(return_value=Row(name="file-1", file_url="/private/files/admin.png")),
+			),
+			(resolution, "saved_photo_sha256", Mock(return_value=self.stored_digest)),
 			(resolution.api, "insert", Mock(side_effect=insert)),
 		]:
 			self.stack.enter_context(patch.object(obj, key, replacement))
@@ -140,7 +146,8 @@ class TestAdminPendingDuty(unittest.TestCase):
 		content = self.image()
 		photo = {"content": base64.b64encode(content).decode(), "reported_at": self.stamp(2)}
 		resolution.apply(self.duty, {"visits": [self.item(photo=photo)]}, "test")
-		self.assertEqual(self.inserted[0].sha256, hashlib.sha256(content).hexdigest())
+		self.assertEqual(self.inserted[0].sha256, self.stored_digest)
+		resolution.saved_photo_sha256.assert_called_once_with("file-1")
 		self.assertIn("Administrator supplied", self.inserted[0].capture_source)
 		self.assertEqual(self.visit.status, "Completed")
 
@@ -217,7 +224,8 @@ class TestAdminPendingDuty(unittest.TestCase):
 		with patch.object(resolution, "meter_photo_valid", return_value=False):
 			resolution.apply(self.duty, {"odometer": [item]}, "test")
 		self.assertEqual(self.duty.odometer_end, 2500)
-		self.assertEqual(self.duty.odometer_end_sha256, hashlib.sha256(content).hexdigest())
+		self.assertEqual(self.duty.odometer_end_sha256, self.stored_digest)
+		resolution.saved_photo_sha256.assert_called_once_with("file-1")
 		with patch.object(resolution, "meter_photo_valid", return_value=True):
 			with self.assertRaises(frappe.ValidationError):
 				resolution.apply(self.duty, {"odometer": [item]}, "test")

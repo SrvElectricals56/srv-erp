@@ -55,6 +55,7 @@ class TestVisitRetake(unittest.TestCase):
 					patch.object(frappe, "db", db),
 					patch.object(frappe, "flags", frappe._dict()),
 					patch.object(api, "location", return_value=point),
+					patch.object(api, "visit_photo_content", return_value=image.getvalue()),
 					patch.object(api, "now_datetime", return_value=stamp),
 					patch("frappe.utils.get_system_timezone", return_value="Asia/Kolkata"),
 					patch.object(
@@ -62,8 +63,9 @@ class TestVisitRetake(unittest.TestCase):
 						"insert",
 						side_effect=lambda dt, **values: frappe._dict(doctype=dt, name="new-photo", **values),
 					),
-					patch(
-						"frappe.utils.file_manager.save_file",
+					patch.object(
+						api,
+						"store_private_photo",
 						return_value=frappe._dict(file_url="/private/files/new.jpg"),
 					),
 					patch.object(api, "save"),

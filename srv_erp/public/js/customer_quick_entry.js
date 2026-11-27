@@ -15,6 +15,26 @@
 		}
 
 		class SRVCustomerQuickEntryForm extends CustomerQuickEntryForm {
+			get_contact_fields() {
+				return [
+					...super.get_contact_fields(),
+					{ fieldtype: "Section Break", hide_border: 1 },
+					{ fieldname: "custom_date_of_birth", label: __("Date of Birth"), fieldtype: "Date", max_date: frappe.datetime.str_to_obj(frappe.datetime.get_today()) },
+					{ fieldtype: "Column Break" },
+					{ fieldname: "custom_marriage_anniversary", label: __("Marriage Anniversary"), fieldtype: "Date", max_date: frappe.datetime.str_to_obj(frappe.datetime.get_today()) },
+				];
+			}
+
+			get_variant_fields() {
+				const fields = super.get_variant_fields();
+				const index = fields.findIndex((field) => field.fieldname === "mobile_number");
+				fields.splice(index + 1, 0,
+					{ fieldname: "custom_date_of_birth", label: __("Date of Birth"), fieldtype: "Date", max_date: frappe.datetime.str_to_obj(frappe.datetime.get_today()) },
+					{ fieldname: "custom_marriage_anniversary", label: __("Marriage Anniversary"), fieldtype: "Date", max_date: frappe.datetime.str_to_obj(frappe.datetime.get_today()) }
+				);
+				return fields;
+			}
+
 			set_meta_and_mandatory_fields() {
 				super.set_meta_and_mandatory_fields();
 

@@ -55,8 +55,9 @@ class TestAsyncPhoto(unittest.TestCase):
 			patch.object(api, "now_datetime", return_value=self.stamp),
 			patch("frappe.utils.get_system_timezone", return_value="Asia/Kolkata"),
 			patch.object(api, "insert", side_effect=insert_evidence),
-			patch(
-				"frappe.utils.file_manager.save_file",
+			patch.object(
+				api,
+				"store_private_photo",
 				return_value=frappe._dict(file_url="/private/files/shop.jpg"),
 			),
 			patch.object(api, "save") as save,

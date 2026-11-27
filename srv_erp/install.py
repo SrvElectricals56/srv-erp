@@ -1,7 +1,7 @@
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
-from srv_erp.customer.customer import configure_customer_group_required
+from srv_erp.customer.customer import configure_customer_group_required, configure_customer_personal_dates
 from srv_erp.item.variant_auto_creation import (
 	set_srv_settings_defaults,
 	sync_brand_master_values_to_attribute,
@@ -43,6 +43,7 @@ def before_migrate():
 
 def after_install():
 	configure_customer_group_required()
+	configure_customer_personal_dates()
 	configure_sales_order_brand_filter()
 	configure_item_group_sales_order_uom()
 	setup_production()
@@ -79,6 +80,7 @@ def after_install():
 
 def after_migrate():
 	configure_customer_group_required()
+	configure_customer_personal_dates()
 	configure_sales_order_brand_filter()
 	configure_item_group_sales_order_uom()
 	setup_production()
