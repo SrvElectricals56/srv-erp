@@ -32,7 +32,6 @@ HOME_WORKSPACE_SECTIONS = (
 			("Items Ordered in Date Range", "Report", "Items Ordered in Date Range"),
 			("Items Sold in Date Range", "Report", "Items Sold in Date Range"),
 			("Production Planning Forecast", "Report", "Production Planning Forecast"),
-			("Daily Outgoing", "Report", "Daily Outgoing"),
 		),
 	),
 )

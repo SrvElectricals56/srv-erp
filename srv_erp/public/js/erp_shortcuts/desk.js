@@ -15,7 +15,6 @@ const page_shortcuts = [
 	{ key: "o", label: "Items Ordered in Date Range", route: ["query-report", "Items Ordered in Date Range"], description: "Open Items Ordered in Date Range" },
 	{ key: "m", label: "Items Sold in Date Range", route: ["query-report", "Items Sold in Date Range"], description: "Open Items Sold in Date Range" },
 	{ key: "f", label: "Production Planning Forecast", route: ["query-report", "Production Planning Forecast"], description: "Open Production Planning Forecast" },
-	{ key: "y", label: "Daily Outgoing", route: ["query-report", "Daily Outgoing"], description: "Open Daily Outgoing" },
 ];
 const shortcut_by_label = new Map(page_shortcuts.map((definition) => [definition.label, definition]));
 const SIDEBAR_KEYBOARD_CLASS = "srv-erp-sidebar-keyboard-active";
