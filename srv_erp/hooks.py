@@ -232,8 +232,14 @@ doc_events = {
 	"DocShare": {"validate": "srv_erp.production.permissions.prevent_production_sharing"},
 	"Customer": {
 		"before_validate": "srv_erp.customer.customer.validate_customer_group_required",
-		"validate": ["srv_erp.customer.customer.validate_unique_gstin", "srv_erp.customer.customer.validate_customer_personal_dates"],
-		"on_update": ["srv_erp.customer.customer.sync_customer_linked_docs", "srv_erp.customer.personal_date_reminders.send_reminders_on_customer_save"],
+		"validate": [
+			"srv_erp.customer.customer.validate_unique_gstin",
+			"srv_erp.customer.customer.validate_customer_personal_dates",
+		],
+		"on_update": [
+			"srv_erp.customer.customer.sync_customer_linked_docs",
+			"srv_erp.customer.personal_date_reminders.send_reminders_on_customer_save",
+		],
 		"after_rename": "srv_erp.customer.customer.sync_customer_linked_docs_after_rename",
 	},
 	"Address": {
@@ -323,7 +329,10 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
-	"daily": ["srv_erp.selling.overdue_reminders.send_overdue_reminders", "srv_erp.customer.personal_date_reminders.send_personal_date_reminders"],
+	"daily": [
+		"srv_erp.selling.overdue_reminders.send_overdue_reminders",
+		"srv_erp.customer.personal_date_reminders.send_personal_date_reminders",
+	],
 	"cron": {
 		"*/5 * * * *": [
 			"srv_erp.smart_dsr.api.check_tracking",
