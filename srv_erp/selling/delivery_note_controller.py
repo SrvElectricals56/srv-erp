@@ -56,46 +56,44 @@ class SRVDeliveryNote(DeliveryUOMMixin, DeliveryNote):
 				)
 
 	def validate_with_previous_doc(self):
+		reference_docs = {
+			"Sales Order": {
+				"ref_dn_field": "against_sales_order",
+				"compare_fields": [
+					["customer", "="],
+					["company", "="],
+					["project", "="],
+					["currency", "="],
+				],
+			},
+			"Sales Order Item": {
+				"ref_dn_field": "so_detail",
+				"compare_fields": [],
+				"is_child_table": True,
+				"allow_duplicate_prev_row_id": True,
+			},
+			"Sales Invoice": {
+				"ref_dn_field": "against_sales_invoice",
+				"compare_fields": [
+					["customer", "="],
+					["company", "="],
+					["project", "="],
+					["currency", "="],
+				],
+			},
+			"Sales Invoice Item": {
+				"ref_dn_field": "si_detail",
+				"compare_fields": [["item_code", "="], ["uom", "="], ["conversion_factor", "="]],
+				"is_child_table": True,
+				"allow_duplicate_prev_row_id": True,
+			},
+		}
 		if self.is_return:
-			return super().validate_with_previous_doc()
+			return StockController.validate_with_previous_doc(self, reference_docs)
 		from srv_erp.selling.delivery_note import validate_delivery_sales_order_references
 
 		validate_delivery_sales_order_references(self)
-		StockController.validate_with_previous_doc(
-			self,
-			{
-				"Sales Order": {
-					"ref_dn_field": "against_sales_order",
-					"compare_fields": [
-						["customer", "="],
-						["company", "="],
-						["project", "="],
-						["currency", "="],
-					],
-				},
-				"Sales Order Item": {
-					"ref_dn_field": "so_detail",
-					"compare_fields": [],
-					"is_child_table": True,
-					"allow_duplicate_prev_row_id": True,
-				},
-				"Sales Invoice": {
-					"ref_dn_field": "against_sales_invoice",
-					"compare_fields": [
-						["customer", "="],
-						["company", "="],
-						["project", "="],
-						["currency", "="],
-					],
-				},
-				"Sales Invoice Item": {
-					"ref_dn_field": "si_detail",
-					"compare_fields": [["item_code", "="], ["uom", "="], ["conversion_factor", "="]],
-					"is_child_table": True,
-					"allow_duplicate_prev_row_id": True,
-				},
-			},
-		)
+		StockController.validate_with_previous_doc(self, reference_docs)
 
 		if (
 			cint(frappe.db.get_single_value("Selling Settings", "maintain_same_sales_rate"))
