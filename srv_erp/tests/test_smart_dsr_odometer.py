@@ -175,7 +175,7 @@ class TestOdometer(unittest.TestCase):
 		stored = Mock(get_content=Mock(return_value=b"re-encoded JPEG bytes"))
 		with (
 			patch.object(frappe, "db", Mock()),
-			patch("frappe.utils.file_manager.save_file", return_value=file) as save_file,
+			patch.object(odometer, "store_private_photo", return_value=file) as store_photo,
 			patch.object(frappe, "get_doc", return_value=stored),
 		):
 			frappe.db.get_value.return_value = file.name
@@ -187,13 +187,8 @@ class TestOdometer(unittest.TestCase):
 			self.assertEqual(
 				fields["odometer_start_sha256"], hashlib.sha256(b"re-encoded JPEG bytes").hexdigest()
 			)
-			save_file.assert_called_once_with(
-				"odometer-start-duty.jpg",
-				self.image,
-				doc.doctype,
-				doc.name,
-				is_private=1,
-				df="odometer_start_photo",
+			store_photo.assert_called_once_with(
+				"odometer-start-duty.jpg", self.image, doc, "odometer_start_photo"
 			)
 			odometer.validate_stored_photo(doc, "start")
 			stored.get_content.return_value = b""

@@ -10,6 +10,7 @@ import frappe
 from frappe.utils import now_datetime
 
 from . import api
+from .file import store_private_photo
 from .policy import indian_vehicle_number
 
 PHOTO_FIELDS = frozenset({"odometer_start_photo", "odometer_end_photo"})
@@ -105,17 +106,8 @@ def validate_photo(payload, expected):
 
 
 def attach_photo(doc, phase, photo):
-	from frappe.utils.file_manager import save_file
-
 	field = "odometer_" + phase + "_photo"
-	previous = frappe.flags.smart_dsr_evidence_write
-	frappe.flags.smart_dsr_evidence_write = True
-	try:
-		file = save_file(
-			f"odometer-{phase}-{doc.name}.jpg", photo["data"], doc.doctype, doc.name, is_private=1, df=field
-		)
-	finally:
-		frappe.flags.smart_dsr_evidence_write = previous
+	file = store_private_photo(f"odometer-{phase}-{doc.name}.jpg", photo["data"], doc, field)
 	digest = saved_photo_sha256(file.name)
 	doc.set(field, file.file_url)
 	doc.set("odometer_" + phase + "_sha256", digest)

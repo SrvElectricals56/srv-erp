@@ -74,6 +74,7 @@ class TestWebsite(unittest.TestCase):
 	def test_duty_and_visit_camera_photos_survive_frappe_jpeg_reencoding(self):
 		from unittest.mock import patch
 
+		from frappe.utils.file_manager import save_file
 		from PIL import Image
 
 		def camera_photo(color):
@@ -91,15 +92,31 @@ class TestWebsite(unittest.TestCase):
 
 		get_system_settings = frappe.get_system_settings
 
-		def system_settings(key=None):
-			return True if key == "strip_exif_metadata_from_uploaded_images" else get_system_settings(key)
+		def system_settings(strip_exif):
+			def setting(key):
+				return (
+					strip_exif
+					if key == "strip_exif_metadata_from_uploaded_images"
+					else get_system_settings(key)
+				)
+
+			return setting
 
 		meter = camera_photo("gray")
+		shop = camera_photo("white")
+		# Identical bytes in another account's private files must never be reused.
+		frappe.set_user("Administrator")
+		with patch.object(frappe, "get_system_settings", side_effect=system_settings(False)):
+			private_meter = save_file("other-account-meter.jpg", meter, None, None, is_private=1)
+			private_shop = save_file("other-account-shop.jpg", shop, None, None, is_private=1)
+		self.assertEqual(saved_photo(private_meter.file_url), meter)
+		self.assertEqual(saved_photo(private_shop.file_url), shop)
+		frappe.set_user(self.user)
 		vehicle, request_key = "PB31AB1234", "start-duty-key"
 		meter_challenge = api.odometer_camera_challenge(
 			"start", 100, vehicle_number=vehicle, request_key=request_key
 		)
-		with patch.object(frappe, "get_system_settings", side_effect=system_settings):
+		with patch.object(frappe, "get_system_settings", side_effect=system_settings(True)):
 			duty = api.duty_on(
 				vehicle_number=vehicle,
 				gps=self.gps,
@@ -108,15 +125,17 @@ class TestWebsite(unittest.TestCase):
 				odometer_photo={"challenge": meter_challenge, "content": base64.b64encode(meter).decode()},
 			)["duty"]["name"]
 		meter_url = frappe.db.get_value("DSR Duty Session", duty, "odometer_start_photo")
+		self.assertNotEqual(meter_url, private_meter.file_url)
 		self.assertNotEqual(saved_photo(meter_url), meter)
 		activity = api.dealer_arrival(duty, self.customer.name, self.gps, "arrival-website")
 		challenge = api.browser_photo_challenge(activity)
 		with self.assertRaises(frappe.ValidationError):
 			api.browser_photo(activity, challenge, "not-an-image", self.gps)
-		image = base64.b64encode(camera_photo("white")).decode()
-		with patch.object(frappe, "get_system_settings", side_effect=system_settings):
+		image = base64.b64encode(shop).decode()
+		with patch.object(frappe, "get_system_settings", side_effect=system_settings(True)):
 			result = api.browser_photo(activity, challenge, image, self.gps)
-		self.assertNotEqual(saved_photo(result["photo"]), base64.b64decode(image))
+		self.assertNotEqual(result["photo"], private_shop.file_url)
+		self.assertNotEqual(saved_photo(result["photo"]), shop)
 		self.assertTrue(api.valid_photo(activity, self.user))
 		self.assertTrue(api.visit_details(activity)["photo_verified"])
 		self.assertEqual(api.order_return_reference(activity)["customer"], self.customer.name)
@@ -126,7 +145,7 @@ class TestWebsite(unittest.TestCase):
 
 		ending_meter = camera_photo("blue")
 		ending_challenge = api.odometer_camera_challenge("end", 225, duty=duty)
-		with patch.object(frappe, "get_system_settings", side_effect=system_settings):
+		with patch.object(frappe, "get_system_settings", side_effect=system_settings(True)):
 			closed = api.duty_off(
 				duty,
 				self.gps,

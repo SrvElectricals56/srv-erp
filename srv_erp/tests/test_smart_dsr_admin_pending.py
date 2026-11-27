@@ -83,7 +83,7 @@ class TestAdminPendingDuty(unittest.TestCase):
 			(resolution.api, "record_expense_document", self.expense),
 			(
 				resolution,
-				"attach_photo",
+				"store_private_photo",
 				Mock(return_value=Row(name="file-1", file_url="/private/files/admin.png")),
 			),
 			(resolution, "saved_photo_sha256", Mock(return_value=self.stored_digest)),

@@ -9,6 +9,7 @@ import frappe
 from frappe.utils import get_datetime, now_datetime
 
 from . import admin, api
+from .file import store_private_photo
 from .odometer import meter_photo_valid, reading, saved_photo_sha256
 
 
@@ -114,17 +115,6 @@ def photo_bytes(payload):
 	return content, ext
 
 
-def attach_photo(content, filename, doctype, name, field=None):
-	from frappe.utils.file_manager import save_file
-
-	previous = frappe.flags.smart_dsr_evidence_write
-	frappe.flags.smart_dsr_evidence_write = True
-	try:
-		return save_file(filename, content, doctype, name, is_private=1, df=field)
-	finally:
-		frappe.flags.smart_dsr_evidence_write = previous
-
-
 def owned_row(doctype, name, doc):
 	row = frappe.get_doc(doctype, name, for_update=True)
 	if row.duty != doc.name or row.account != doc.account:
@@ -186,9 +176,7 @@ def apply(doc, values, request_key):
 							received_at=now_datetime(),
 							capture_source="Administrator supplied; reported capture time",
 						)
-						file = attach_photo(
-							content, f"admin-visit-{row.name}.{ext}", evidence.doctype, evidence.name
-						)
+						file = store_private_photo(f"admin-visit-{row.name}.{ext}", content, evidence)
 						evidence.photo = file.file_url
 						evidence.sha256 = saved_photo_sha256(file.name)
 						api.save(evidence)
@@ -290,9 +278,7 @@ def apply(doc, values, request_key):
 				before = {key: doc.get(key) for key in keys}
 				doc.set(f"odometer_{phase}", reading(item.get("reading")))
 				field = f"odometer_{phase}_photo"
-				file = attach_photo(
-					content, f"admin-meter-{phase}-{doc.name}.{ext}", doc.doctype, doc.name, field
-				)
+				file = store_private_photo(f"admin-meter-{phase}-{doc.name}.{ext}", content, doc, field)
 				doc.set(field, file.file_url)
 				doc.set(f"odometer_{phase}_sha256", saved_photo_sha256(file.name))
 				doc.set(f"odometer_{phase}_captured_at", capture)
