@@ -82,8 +82,6 @@ def get_brand_filtered_items(
         "i.disabled = 0",
         "(iva.parent IS NULL OR iva.attribute_value = %(brand)s)",
     ]
-    if filters.get("is_sales_item"):
-        conditions.append("i.is_sales_item = 1")
 
     if txt:
         conditions.append("""
@@ -114,8 +112,8 @@ def get_brand_filtered_items(
             "page_len": cint(page_len),
         },
     )
-
-
+    
+     
 @frappe.whitelist()
 def validate_sales_order_item_brand(item_code, brand):
     if not item_code or not brand:
