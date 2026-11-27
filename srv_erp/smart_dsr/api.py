@@ -19,6 +19,7 @@ import frappe
 from frappe.utils import cint, flt, get_datetime, getdate, now_datetime
 
 from .admin_permissions import is_admin, require_finance
+from .file import store_private_photo
 from .policy import (
 	UNVERIFIED_INTERVAL,
 	balance,
@@ -2575,7 +2576,6 @@ def browser_photo_challenge(activity):
 
 @frappe.whitelist(methods=["POST"])
 def browser_photo(activity, challenge, image_base64, gps=None):
-	from frappe.utils.file_manager import save_file
 	from PIL import Image
 
 	row, doc = activity_doc(activity)
@@ -2608,14 +2608,7 @@ def browser_photo(activity, challenge, image_base64, gps=None):
 		capture_source="Browser camera" if point else "Browser camera pending location",
 		challenge=challenge,
 	)
-	previous = frappe.flags.smart_dsr_evidence_write
-	frappe.flags.smart_dsr_evidence_write = True
-	try:
-		file = save_file(
-			"shop-" + evidence.name + ".jpg", data, evidence.doctype, evidence.name, is_private=1
-		)
-	finally:
-		frappe.flags.smart_dsr_evidence_write = previous
+	file = store_private_photo(f"shop-{evidence.name}.jpg", data, evidence)
 	evidence.photo = file.file_url
 	# Frappe can rewrite JPEGs while saving. Verify the bytes in private storage.
 	stored = visit_photo_content(evidence)

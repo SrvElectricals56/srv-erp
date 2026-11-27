@@ -50,7 +50,7 @@ class TestOdometer(unittest.TestCase):
 			patch.object(odometer, "now_datetime", return_value=datetime(2026, 11, 16, 7)),
 		):
 			photo = odometer.validate_photo(payload, expected)
-			self.assertEqual(photo["sha256"], hashlib.sha256(self.image).hexdigest())
+			self.assertEqual(photo["data"], self.image)
 			for field, changed in (
 				("phase", "end"),
 				("account", "other"),
@@ -162,6 +162,37 @@ class TestOdometer(unittest.TestCase):
 		):
 			frappe.db.get_value.return_value = "file"
 			with self.assertRaises(frappe.ValidationError):
+				odometer.validate_stored_photo(doc, "start")
+
+	def test_meter_digest_matches_private_storage_after_jpeg_rewrite(self):
+		doc = Mock(doctype="DSR Duty Session")
+		doc.name = "duty"
+		fields = {}
+		doc.set.side_effect = fields.__setitem__
+		doc.get.side_effect = fields.get
+		file = Mock(file_url="/private/files/start.jpg")
+		file.name = "private-file"
+		stored = Mock(get_content=Mock(return_value=b"re-encoded JPEG bytes"))
+		with (
+			patch.object(frappe, "db", Mock()),
+			patch.object(odometer, "store_private_photo", return_value=file) as store_photo,
+			patch.object(frappe, "get_doc", return_value=stored),
+		):
+			frappe.db.get_value.return_value = file.name
+			odometer.attach_photo(
+				doc,
+				"start",
+				{"data": self.image, "captured_at": datetime(2026, 11, 16, 7), "challenge": "token"},
+			)
+			self.assertEqual(
+				fields["odometer_start_sha256"], hashlib.sha256(b"re-encoded JPEG bytes").hexdigest()
+			)
+			store_photo.assert_called_once_with(
+				"odometer-start-duty.jpg", self.image, doc, "odometer_start_photo"
+			)
+			odometer.validate_stored_photo(doc, "start")
+			stored.get_content.return_value = b""
+			with self.assertRaisesRegex(frappe.ValidationError, "missing or changed"):
 				odometer.validate_stored_photo(doc, "start")
 
 	def test_odometer_attachment_cannot_be_deleted_or_detached_directly(self):
