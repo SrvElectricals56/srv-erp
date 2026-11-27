@@ -366,6 +366,20 @@ class TestDeliveryNoteUOMConversion(FrappeTestCase):
 		so.reload()
 		self.assertEqual(so.items[0].delivered_qty, 0)
 
+	def test_return_from_substituted_delivery_accepts_dispatched_variant(self):
+		from erpnext.stock.doctype.delivery_note.delivery_note import make_sales_return
+
+		ordered, dispatched = self.variants()
+		self.item = ordered
+		so = self.order(qty=2)
+		dn = self.substituted_delivery(so, dispatched).insert().submit()
+
+		return_dn = make_sales_return(dn.name)
+		self.assertEqual(return_dn.items[0].item_code, dispatched.name)
+		self.assertEqual(return_dn.items[0].so_detail, so.items[0].name)
+		self.assertEqual(return_dn.items[0].dn_detail, dn.items[0].name)
+		return_dn.insert().submit()
+
 	def test_sibling_scan_candidates_identify_ordered_variant(self):
 		ordered, dispatched = self.variants()
 		self.item = ordered
