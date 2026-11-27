@@ -9,8 +9,7 @@ frappe.ui.form.on("SRV Production Entry", {
 		});
 		frm.set_query("assignment", "items", () => ({
 			filters: {
-				...(frm.doc.schedule ? { schedule: frm.doc.schedule } : {}),
-				...(frm.doc.company ? { company: frm.doc.company } : {}),
+				schedule: frm.doc.schedule || "",
 				status: ["!=", "Cancelled"],
 				...(frm.doc.supervisor ? { supervisor: frm.doc.supervisor } : {}),
 				...(frm.doc.work_area ? { work_area: frm.doc.work_area } : {}),
@@ -42,7 +41,7 @@ frappe.ui.form.on("SRV Production Entry", {
 		if (frm.is_new() && !frm.doc.items?.length) {
 			frm.set_intro(
 				__(
-					"Open a production schedule and use Create → Production Entry to bring in its pending items, or add a row and select its Assignment in the row details.",
+					"Open a production schedule and use Create → Production Entry to bring in its pending items.",
 				),
 				"blue",
 			);
@@ -60,7 +59,6 @@ frappe.ui.form.on("SRV Production Entry Item", {
 			args: { assignment: row.assignment },
 		});
 		if (!frm.doc.schedule) await frm.set_value("schedule", message.schedule);
-		if (!frm.doc.company) await frm.set_value("company", message.company);
 		if (!frm.doc.work_area) await frm.set_value("work_area", message.work_area);
 		if (!frm.doc.supervisor) await frm.set_value("supervisor", message.supervisor);
 		const dates = (frm.doc.items || [])
