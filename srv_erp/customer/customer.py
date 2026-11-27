@@ -251,3 +251,24 @@ def _get_address_display(address_name):
 
 	address = frappe.get_doc("Address", address_name)
 	return render_address(address.as_dict(), check_permissions=False)
+
+
+def configure_customer_personal_dates():
+	from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+
+	create_custom_fields({"Customer": [
+		{"fieldname": "custom_date_of_birth", "label": "Date of Birth", "fieldtype": "Date", "insert_after": "customer_group"},
+		{"fieldname": "custom_marriage_anniversary", "label": "Marriage Anniversary", "fieldtype": "Date", "insert_after": "custom_date_of_birth"},
+	]})
+
+
+def validate_customer_personal_dates(doc, method=None):
+	from frappe.utils import getdate, today
+
+	for fieldname, label in (
+		("custom_date_of_birth", "Date of Birth"),
+		("custom_marriage_anniversary", "Marriage Anniversary"),
+	):
+		value = doc.get(fieldname)
+		if value and getdate(value) > getdate(today()):
+			frappe.throw(_("{0} cannot be a future date.").format(_(label)))

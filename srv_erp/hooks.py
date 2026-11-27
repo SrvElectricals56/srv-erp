@@ -38,7 +38,7 @@ app_include_js = [
 	"/assets/srv_erp/js/home_collections.js?v=20261121-4",
 	"/assets/srv_erp/js/salesperson_home.js?v=20261123-1",
 	"/assets/srv_erp/js/sales_person_defaults.js",
-	"/assets/srv_erp/js/customer_quick_entry.js?v=20261125-customer-group-required",
+	"/assets/srv_erp/js/customer_quick_entry.js?v=20261127-customer-personal-dates-2",
 	"/assets/srv_erp/js/dynamic_item_request.js",
 	"grid_overrides.bundle.js",
 	"/assets/srv_erp/js/smart_dsr_search.js?v=20261123-1",
@@ -232,8 +232,8 @@ doc_events = {
 	"DocShare": {"validate": "srv_erp.production.permissions.prevent_production_sharing"},
 	"Customer": {
 		"before_validate": "srv_erp.customer.customer.validate_customer_group_required",
-		"validate": "srv_erp.customer.customer.validate_unique_gstin",
-		"on_update": "srv_erp.customer.customer.sync_customer_linked_docs",
+		"validate": ["srv_erp.customer.customer.validate_unique_gstin", "srv_erp.customer.customer.validate_customer_personal_dates"],
+		"on_update": ["srv_erp.customer.customer.sync_customer_linked_docs", "srv_erp.customer.personal_date_reminders.send_reminders_on_customer_save"],
 		"after_rename": "srv_erp.customer.customer.sync_customer_linked_docs_after_rename",
 	},
 	"Address": {
@@ -323,7 +323,7 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
-	"daily": ["srv_erp.selling.overdue_reminders.send_overdue_reminders"],
+	"daily": ["srv_erp.selling.overdue_reminders.send_overdue_reminders", "srv_erp.customer.personal_date_reminders.send_personal_date_reminders"],
 	"cron": {
 		"*/5 * * * *": [
 			"srv_erp.smart_dsr.api.check_tracking",
@@ -372,6 +372,7 @@ override_doctype_class = {
 # ------------------------------
 #
 override_whitelisted_methods = {
+	"frappe.desk.doctype.notification_log.notification_log.get_notification_logs": "srv_erp.customer.personal_date_reminders.get_personal_notification_logs",
 	"erpnext.controllers.item_variant.enqueue_multiple_variant_creation": "srv_erp.masters.dynamic_item.bulk_guard.enqueue_multiple_variant_creation",
 	"erpnext.controllers.item_variant.create_variant_doc_for_quick_entry": "srv_erp.masters.dynamic_item.bulk_guard.create_variant_doc_for_quick_entry",
 	"erpnext.selling.doctype.sales_order.sales_order.make_delivery_note": "srv_erp.selling.delivery_note.make_delivery_note",
