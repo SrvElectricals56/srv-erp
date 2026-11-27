@@ -9,31 +9,7 @@ import frappe
 from frappe.utils import get_datetime, now_datetime
 
 from . import admin, api
-
-
-def meter_photo_valid(doc, phase):
-	field = f"odometer_{phase}_photo"
-	if not doc.get(field) or not doc.get(f"odometer_{phase}_sha256"):
-		return False
-	name = frappe.db.get_value(
-		"File",
-		{
-			"file_url": doc.get(field),
-			"is_private": 1,
-			"attached_to_doctype": doc.doctype,
-			"attached_to_name": doc.name,
-			"attached_to_field": field,
-		},
-		"name",
-	)
-	try:
-		return bool(
-			name
-			and hashlib.sha256(frappe.get_doc("File", name).get_content()).hexdigest()
-			== doc.get(f"odometer_{phase}_sha256")
-		)
-	except (OSError, frappe.DoesNotExistError):
-		return False
+from .odometer import meter_photo_valid, reading, saved_photo_sha256
 
 
 def requirements(doc, status):
@@ -144,7 +120,7 @@ def attach_photo(content, filename, doctype, name, field=None):
 	previous = frappe.flags.smart_dsr_evidence_write
 	frappe.flags.smart_dsr_evidence_write = True
 	try:
-		return save_file(filename, content, doctype, name, is_private=1, df=field).file_url
+		return save_file(filename, content, doctype, name, is_private=1, df=field)
 	finally:
 		frappe.flags.smart_dsr_evidence_write = previous
 
@@ -208,12 +184,13 @@ def apply(doc, values, request_key):
 							activity=row.name,
 							captured_at=captured,
 							received_at=now_datetime(),
-							sha256=hashlib.sha256(content).hexdigest(),
 							capture_source="Administrator supplied; reported capture time",
 						)
-						evidence.photo = attach_photo(
+						file = attach_photo(
 							content, f"admin-visit-{row.name}.{ext}", evidence.doctype, evidence.name
 						)
+						evidence.photo = file.file_url
+						evidence.sha256 = saved_photo_sha256(file.name)
 						api.save(evidence)
 					else:
 						row.photo_exception = "Administrator approved missing photo: " + text(
@@ -295,8 +272,6 @@ def apply(doc, values, request_key):
 					"source": "Administrator entry",
 				}
 			else:
-				from .odometer import reading
-
 				phase = identifier
 				if phase not in ("start", "end") or not doc.get("odometer_required"):
 					frappe.throw("Select a required starting or ending meter photo.")
@@ -315,13 +290,11 @@ def apply(doc, values, request_key):
 				before = {key: doc.get(key) for key in keys}
 				doc.set(f"odometer_{phase}", reading(item.get("reading")))
 				field = f"odometer_{phase}_photo"
-				doc.set(
-					field,
-					attach_photo(
-						content, f"admin-meter-{phase}-{doc.name}.{ext}", doc.doctype, doc.name, field
-					),
+				file = attach_photo(
+					content, f"admin-meter-{phase}-{doc.name}.{ext}", doc.doctype, doc.name, field
 				)
-				doc.set(f"odometer_{phase}_sha256", hashlib.sha256(content).hexdigest())
+				doc.set(field, file.file_url)
+				doc.set(f"odometer_{phase}_sha256", saved_photo_sha256(file.name))
 				doc.set(f"odometer_{phase}_captured_at", capture)
 				api.save(doc)
 				row = doc

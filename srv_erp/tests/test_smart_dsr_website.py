@@ -71,57 +71,75 @@ class TestWebsite(unittest.TestCase):
 		self.assertEqual(len(api.visit_details(activity)["collections"]), 1)
 		self.assertEqual(result["accounting_status"], "Recorded")
 
-	def test_private_browser_photo_challenge_and_ownership(self):
+	def test_duty_and_visit_camera_photos_survive_frappe_jpeg_reencoding(self):
 		from unittest.mock import patch
 
 		from PIL import Image
 
-		meter = io.BytesIO()
-		Image.new("RGB", (120, 120), "gray").save(meter, format="JPEG")
-		vehicle, request_key = "PB31AB1234", "start-duty-key"
-		meter_challenge = api.odometer_camera_challenge(
-			"start", 100, vehicle_number=vehicle, request_key=request_key
-		)
-		duty = api.duty_on(
-			vehicle_number=vehicle,
-			gps=self.gps,
-			request_key=request_key,
-			odometer_start=100,
-			odometer_photo={
-				"challenge": meter_challenge,
-				"content": base64.b64encode(meter.getvalue()).decode(),
-			},
-		)["duty"]["name"]
-		meter_url = frappe.db.get_value("DSR Duty Session", duty, "odometer_start_photo")
-		meter_path = Path(frappe.get_site_path("private", "files", meter_url.rsplit("/", 1)[1]))
-		self.addCleanup(lambda: meter_path.unlink(missing_ok=True))
-		activity = api.dealer_arrival(duty, self.customer.name, self.gps, "arrival-website")
-		challenge = api.browser_photo_challenge(activity)
-		with self.assertRaises(frappe.ValidationError):
-			api.browser_photo(activity, challenge, "not-an-image", self.gps)
-		image = io.BytesIO()
-		exif = Image.Exif()
-		exif[274] = 6  # EXIF orientation
-		Image.new("RGB", (120, 120), "white").save(image, format="JPEG", exif=exif)
+		def camera_photo(color):
+			image = io.BytesIO()
+			exif = Image.Exif()
+			exif[274] = 6  # EXIF orientation
+			Image.new("RGB", (120, 120), color).save(image, format="JPEG", exif=exif)
+			return image.getvalue()
+
+		def saved_photo(url):
+			self.assertTrue(url.startswith("/private/files/"))
+			path = Path(frappe.get_site_path("private", "files", url.rsplit("/", 1)[1]))
+			self.addCleanup(lambda: path.unlink(missing_ok=True))
+			return path.read_bytes()
+
 		get_system_settings = frappe.get_system_settings
 
 		def system_settings(key=None):
 			return True if key == "strip_exif_metadata_from_uploaded_images" else get_system_settings(key)
 
+		meter = camera_photo("gray")
+		vehicle, request_key = "PB31AB1234", "start-duty-key"
+		meter_challenge = api.odometer_camera_challenge(
+			"start", 100, vehicle_number=vehicle, request_key=request_key
+		)
 		with patch.object(frappe, "get_system_settings", side_effect=system_settings):
-			result = api.browser_photo(
-				activity, challenge, base64.b64encode(image.getvalue()).decode(), self.gps
-			)
-		path = Path(frappe.get_site_path("private", "files", result["photo"].rsplit("/", 1)[1]))
-		self.addCleanup(lambda: path.unlink(missing_ok=True))
-		self.assertTrue(result["photo"].startswith("/private/files/"))
-		self.assertNotEqual(path.read_bytes(), image.getvalue())
+			duty = api.duty_on(
+				vehicle_number=vehicle,
+				gps=self.gps,
+				request_key=request_key,
+				odometer_start=100,
+				odometer_photo={"challenge": meter_challenge, "content": base64.b64encode(meter).decode()},
+			)["duty"]["name"]
+		meter_url = frappe.db.get_value("DSR Duty Session", duty, "odometer_start_photo")
+		self.assertNotEqual(saved_photo(meter_url), meter)
+		activity = api.dealer_arrival(duty, self.customer.name, self.gps, "arrival-website")
+		challenge = api.browser_photo_challenge(activity)
+		with self.assertRaises(frappe.ValidationError):
+			api.browser_photo(activity, challenge, "not-an-image", self.gps)
+		image = base64.b64encode(camera_photo("white")).decode()
+		with patch.object(frappe, "get_system_settings", side_effect=system_settings):
+			result = api.browser_photo(activity, challenge, image, self.gps)
+		self.assertNotEqual(saved_photo(result["photo"]), base64.b64decode(image))
 		self.assertTrue(api.valid_photo(activity, self.user))
 		self.assertTrue(api.visit_details(activity)["photo_verified"])
 		self.assertEqual(api.order_return_reference(activity)["customer"], self.customer.name)
 		with self.assertRaises(frappe.ValidationError):
-			api.browser_photo(activity, challenge, base64.b64encode(image.getvalue()).decode(), self.gps)
+			api.browser_photo(activity, challenge, image, self.gps)
 		api.complete_activity(activity, self.gps)
+
+		ending_meter = camera_photo("blue")
+		ending_challenge = api.odometer_camera_challenge("end", 225, duty=duty)
+		with patch.object(frappe, "get_system_settings", side_effect=system_settings):
+			closed = api.duty_off(
+				duty,
+				self.gps,
+				odometer_end=225,
+				odometer_photo={
+					"challenge": ending_challenge,
+					"content": base64.b64encode(ending_meter).decode(),
+				},
+			)["duty"]
+		self.assertEqual(closed["status"], "Closed")
+		self.assertEqual(closed["odometer_distance"], 125)
+		self.assertNotEqual(saved_photo(closed["odometer_end_photo"]), ending_meter)
+		self.assertEqual(api.finalize(duty)["duty"]["status"], "Finalized")
 
 	def test_delete_photo_then_retake_before_submit(self):
 		from PIL import Image

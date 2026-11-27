@@ -55,6 +55,7 @@ class TestVisitRetake(unittest.TestCase):
 					patch.object(frappe, "db", db),
 					patch.object(frappe, "flags", frappe._dict()),
 					patch.object(api, "location", return_value=point),
+					patch.object(api, "visit_photo_content", return_value=image.getvalue()),
 					patch.object(api, "now_datetime", return_value=stamp),
 					patch("frappe.utils.get_system_timezone", return_value="Asia/Kolkata"),
 					patch.object(

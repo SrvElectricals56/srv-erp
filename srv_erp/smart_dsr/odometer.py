@@ -99,7 +99,6 @@ def validate_photo(payload, expected):
 		frappe.throw("Capture a valid meter photo using the live camera (up to 5 MB).")
 	return {
 		"data": data,
-		"sha256": hashlib.sha256(data).hexdigest(),
 		"challenge": payload["challenge"],
 		"captured_at": now_datetime(),
 	}
@@ -117,13 +116,32 @@ def attach_photo(doc, phase, photo):
 		)
 	finally:
 		frappe.flags.smart_dsr_evidence_write = previous
+	digest = saved_photo_sha256(file.name)
 	doc.set(field, file.file_url)
-	doc.set("odometer_" + phase + "_sha256", photo["sha256"])
+	doc.set("odometer_" + phase + "_sha256", digest)
 	doc.set("odometer_" + phase + "_captured_at", photo["captured_at"])
 	frappe.db.after_commit.add(lambda: frappe.cache().delete_value("dsr-odometer:" + photo["challenge"]))
 
 
-def validate_stored_photo(doc, phase):
+def photo_sha256(file_name):
+	try:
+		content = frappe.get_doc("File", file_name).get_content()
+	except (OSError, frappe.DoesNotExistError):
+		return None
+	if isinstance(content, bytes) and content:
+		return hashlib.sha256(content).hexdigest()
+	return None
+
+
+def saved_photo_sha256(file_name):
+	# Frappe can re-encode uploaded JPEGs while stripping EXIF metadata.
+	digest = photo_sha256(file_name)
+	if not digest:
+		frappe.throw("The saved photo could not be verified. Capture or attach it again.")
+	return digest
+
+
+def meter_photo_valid(doc, phase):
 	field = "odometer_" + phase + "_photo"
 	url, digest = doc.get(field), doc.get("odometer_" + phase + "_sha256")
 	if url and digest:
@@ -139,9 +157,10 @@ def validate_stored_photo(doc, phase):
 			"name",
 		)
 		if name:
-			try:
-				if hashlib.sha256(frappe.get_doc("File", name).get_content()).hexdigest() == digest:
-					return
-			except (OSError, frappe.DoesNotExistError):
-				pass
-	frappe.throw(f"The {phase}ing meter photo is missing or changed. Contact an Administrator.")
+			return photo_sha256(name) == digest
+	return False
+
+
+def validate_stored_photo(doc, phase):
+	if not meter_photo_valid(doc, phase):
+		frappe.throw(f"The {phase}ing meter photo is missing or changed. Contact an Administrator.")
