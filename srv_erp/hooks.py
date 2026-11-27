@@ -164,6 +164,9 @@ doctype_list_js = {
 # Installation
 # ------------
 
+# Deliver due occasion reminders when a new authenticated session starts.
+on_session_creation = "srv_erp.user_occasions.on_session_creation"
+
 # before_install = "srv_erp.install.before_install"
 after_install = "srv_erp.install.after_install"
 before_migrate = "srv_erp.install.before_migrate"
@@ -328,6 +331,8 @@ scheduler_events = {
 # 		"srv_erp.tasks.monthly"
 # 	],
 # }
+
+scheduler_events["daily"].append("srv_erp.user_occasions.send_user_occasion_reminders")
 
 # Testing
 # -------
