@@ -51,3 +51,13 @@ class TestCustomerGSTIN(TestCase):
 			with self.assertRaises(frappe.ValidationError):
 				validate_unique_gstin(frappe._dict(name="CUST-NEW", gstin="27AAPFU0939F1ZV"))
 		self.assertIn("already assigned", throw.call_args.args[0])
+
+	def test_customer_save_runs_gstin_validation(self):
+		from srv_erp import hooks
+
+		validators = hooks.doc_events["Customer"]["validate"]
+		if isinstance(validators, str):
+			validators = [validators]
+		self.assertEqual(
+			validators.count("srv_erp.customer.customer.validate_unique_gstin"), 1
+		)

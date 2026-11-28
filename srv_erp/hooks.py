@@ -304,6 +304,14 @@ doc_events = {
 	},
 }
 
+# Keep GSTIN validation alongside any other Customer validators.
+_customer_validate = doc_events["Customer"].get("validate", [])
+if isinstance(_customer_validate, str):
+	_customer_validate = [_customer_validate]
+if "srv_erp.customer.customer.validate_unique_gstin" not in _customer_validate:
+	_customer_validate.append("srv_erp.customer.customer.validate_unique_gstin")
+doc_events["Customer"]["validate"] = _customer_validate
+
 # Scheduled Tasks
 # ---------------
 
