@@ -1,7 +1,15 @@
-import { focus_first_field, handle_field_keys, reset_field_navigation } from "./fields.js";
+import {
+	focus_field_before_heading, focus_first_field, handle_field_keys, reset_field_navigation,
+} from "./fields.js";
 import { decorate_form_hints } from "./form_hints.js";
 import { focus_grid_from_target } from "./grid.js";
-import { consume_key, is_alt_key, is_dialog_open, is_editable_element, is_visible } from "./shared.js";
+import {
+	enhance_form_sections, first_visible_grid_target, get_section_group, is_section_available,
+	is_section_collapsed, set_section_collapsed,
+} from "./section_groups.js";
+import {
+	consume_key, has_open_autocomplete, is_alt_key, is_dialog_open, is_editable_element, is_visible,
+} from "./shared.js";
 
 const SECTION_CLASS = "srv-erp-form-section-keyboard-active";
 let keyboard_tab = null;
@@ -38,28 +46,43 @@ function get_section_tab(section, tabs) {
 }
 
 function get_sections(frm, tabs) {
+	enhance_form_sections(frm);
 	const tabbed = Boolean(frm.layout?.tabs?.length);
 	return (frm.layout?.sections || []).filter((section) => {
 		const wrapper = section.wrapper?.get?.(0);
-		const has_content = section.df?.body_html ||
-			section.fields_list?.some((field) => field.disp_status !== "None");
-		if (section.df.hidden || section.df.hidden_due_to_dependency ||
-			!get_section_head(section) || !has_content || !wrapper ||
-			wrapper.matches(".hide, .hide-control, .empty-section, [hidden]") ||
-			wrapper.style.display === "none" || !is_visible(get_section_head(section))) {
+		const has_content = get_section_group(section).some((member) =>
+			member.df?.body_html || member.fields_list?.some((field) => field.disp_status !== "None")
+		);
+		if (!get_section_head(section) || !has_content || !wrapper || !is_section_available(section)) {
 			return false;
 		}
 		return !tabbed || !wrapper.closest(".tab-pane") || Boolean(get_section_tab(section, tabs));
 	});
 }
 
+function focus_section_content(frm, section, tabs) {
+	const grid_target = first_visible_grid_target(section);
+	if (grid_target && focus_grid_from_target(grid_target)) {
+		return grid_target;
+	}
+
+	const tab = get_section_tab(section, tabs);
+	for (const member of get_section_group(section)) {
+		const input = focus_first_field(frm, get_section_tab(member, tabs) || tab, member);
+		if (input) {
+			return input;
+		}
+	}
+	return null;
+}
+
 function starting_section(frm, tabs, sections) {
 	const active = get_active_tab(frm, tabs);
 	const current_sections = sections.filter((section) => get_section_tab(section, tabs) === active);
-	return current_sections.find((section) => section.df?.collapsible && section.is_collapsed()) ||
-		current_sections[0] ||
-		sections.find((section) => section.df?.collapsible && section.is_collapsed()) ||
-		sections[0];
+	const focused = current_sections.find((section) => get_section_group(section).some(
+		(member) => member.wrapper?.get?.(0)?.contains(document.activeElement)
+	));
+	return focused || current_sections[0];
 }
 
 export function decorate_current_form() {
@@ -117,8 +140,8 @@ function select_tab(frm, tab) {
 function select_section(frm, section, tabs, sections) {
 	const previous = keyboard_section;
 	const tab = get_section_tab(section, tabs);
-	if (previous?.df?.collapsible && previous !== section && !previous.is_collapsed()) {
-		previous.collapse(true);
+	if (previous?.df?.collapsible && previous !== section && !is_section_collapsed(previous)) {
+		set_section_collapsed(previous, true);
 	}
 	clear_section_navigation();
 	reset_field_navigation();
@@ -129,12 +152,12 @@ function select_section(frm, section, tabs, sections) {
 		}
 		for (const other of sections) {
 			if (other !== section && other.df?.collapsible &&
-				get_section_tab(other, tabs) === tab && !other.is_collapsed()) {
-				other.collapse(true);
+				get_section_tab(other, tabs) === tab && !is_section_collapsed(other)) {
+				set_section_collapsed(other, true);
 			}
 		}
-		if (section.df?.collapsible && section.is_collapsed()) {
-			section.collapse(false);
+		if (section.df?.collapsible && is_section_collapsed(section)) {
+			set_section_collapsed(section, false);
 		}
 		const head = get_section_head(section);
 		if (!head.hasAttribute("tabindex")) {
@@ -193,13 +216,100 @@ function handle_section_keys(event, frm, tabs) {
 	if (!["ArrowDown", "ArrowUp"].includes(event.key)) {
 		return false;
 	}
-	const sections = get_sections(frm, tabs);
+	const all_sections = get_sections(frm, tabs);
+	const selected_tab = get_section_tab(keyboard_section, tabs) || get_active_tab(frm, tabs);
+	const sections = all_sections.filter((section) => get_section_tab(section, tabs) === selected_tab);
 	if (!sections.includes(keyboard_section)) {
 		clear_section_navigation();
 		return false;
 	}
 	consume_key(event);
+	const current_index = sections.indexOf(keyboard_section);
+	const entering_details =
+		(event.key === "ArrowUp" && current_index === 0) ||
+		(event.key === "ArrowDown" && current_index === sections.length - 1);
+	if (entering_details) {
+		const current = keyboard_section;
+		const first_heading = get_section_head(sections[0]);
+		if (current.df?.collapsible && !is_section_collapsed(current)) {
+			set_section_collapsed(current, true);
+		}
+		clear_section_navigation();
+		const input = focus_field_before_heading(
+			frm, selected_tab, first_heading, event.key === "ArrowUp"
+		);
+		if (input) {
+			decorate_current_form();
+			return true;
+		}
+		keyboard_section = current;
+	}
 	const next = move_selection(sections, keyboard_section, event.key === "ArrowDown" ? 1 : -1);
+	select_section(frm, next, tabs, sections);
+	return true;
+}
+
+function sections_in_active_tab(frm, tabs) {
+	const active = get_active_tab(frm, tabs);
+	return get_sections(frm, tabs).filter((section) => get_section_tab(section, tabs) === active);
+}
+
+function select_heading(frm, tabs, heading) {
+	const sections = sections_in_active_tab(frm, tabs);
+	const section = sections.find((candidate) => get_section_head(candidate) === heading);
+	if (!section) {
+		return false;
+	}
+	select_section(frm, section, tabs, sections);
+	return true;
+}
+
+export function return_to_parent_heading(event) {
+	if (event.key !== "Escape" || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey ||
+		is_dialog_open() || has_open_autocomplete(event.target) ||
+		!event.target.closest?.(".srv-erp-form-field-keyboard, .srv-erp-grid-keyboard-cell") ||
+		event.target.closest?.(".section-head")) {
+		return false;
+	}
+
+	const frm = get_visible_form();
+	const child_wrapper = event.target.closest?.(".form-section, .form-dashboard-section");
+	if (!frm || !child_wrapper) {
+		return false;
+	}
+
+	const tabs = get_tabs(frm);
+	const sections = sections_in_active_tab(frm, tabs);
+	const parent = sections.find((section) => get_section_group(section).some(
+		(member) => member.wrapper?.get?.(0) === child_wrapper
+	));
+	if (!parent) {
+		return false;
+	}
+
+	consume_key(event);
+	if (!event.repeat) {
+		select_section(frm, parent, tabs, sections);
+	}
+	return true;
+}
+
+function handle_direct_section_arrow(event, frm, tabs) {
+	if (keyboard_section || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey ||
+		!["ArrowDown", "ArrowUp"].includes(event.key)) {
+		return false;
+	}
+	const heading = event.target.closest?.(".section-head.collapsible");
+	if (!heading) {
+		return false;
+	}
+	const sections = sections_in_active_tab(frm, tabs);
+	const current = sections.find((section) => get_section_head(section) === heading);
+	if (!current) {
+		return false;
+	}
+	consume_key(event);
+	const next = move_selection(sections, current, event.key === "ArrowDown" ? 1 : -1);
 	select_section(frm, next, tabs, sections);
 	return true;
 }
@@ -250,11 +360,11 @@ export function handle_form_keyboard(event) {
 		const sections = get_sections(frm, tabs);
 		const focused_section = event.target.closest?.(".form-section, .form-dashboard-section");
 		const heading = keyboard_section || sections.find((section) => section.wrapper?.get?.(0) === focused_section);
-		if (heading?.df?.collapsible && heading.is_collapsed()) {
-			heading.collapse(false);
+		if (heading?.df?.collapsible && is_section_collapsed(heading)) {
+			set_section_collapsed(heading, false);
 		}
 		const input = heading
-			? focus_first_field(frm, get_section_tab(heading, tabs) || active_tab, heading)
+			? focus_section_content(frm, heading, tabs)
 			: focus_first_field(frm, active_tab);
 		if (input) {
 			consume_key(event);
@@ -267,8 +377,9 @@ export function handle_form_keyboard(event) {
 		}
 		return;
 	}
-	if (handle_tab_keys(event, frm, tabs) || handle_section_keys(event, frm, tabs)) {
+	if (handle_tab_keys(event, frm, tabs) || handle_section_keys(event, frm, tabs) ||
+		handle_direct_section_arrow(event, frm, tabs)) {
 		return;
 	}
-	handle_field_keys(event, frm, active_tab);
+	handle_field_keys(event, frm, active_tab, (heading) => select_heading(frm, tabs, heading));
 }

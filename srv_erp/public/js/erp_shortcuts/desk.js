@@ -1,23 +1,30 @@
-import { consume_key, get_visible_page_container, is_alt_key, is_dialog_open, is_visible } from "./shared.js";
+import {
+	consume_key, get_visible_page_container, has_open_autocomplete, is_alt_key, is_dialog_open, is_visible,
+} from "./shared.js";
+import { show_unsaved_navigation_dialog } from "./unsaved_changes.js";
 
 const page_shortcuts = [
-	{ key: "i", label: "Item", route: ["List", "Item"], description: "Open Item List" },
-	{ key: "c", label: "Customer", route: ["List", "Customer"], description: "Open Customer List" },
-	{ key: "u", label: "Supplier", route: ["List", "Supplier"], description: "Open Supplier List" },
-	{ key: "p", label: "Purchase Order", route: ["List", "Purchase Order"], description: "Open Purchase Order List" },
-	{ key: "e", label: "Stock Entry", route: ["List", "Stock Entry"], description: "Open Stock Entry List" },
-	{ key: "t", label: "Purchase Receipt", route: ["List", "Purchase Receipt"], description: "Open Purchase Receipt List" },
-	{ key: "s", label: "Sales Order", route: ["List", "Sales Order"], description: "Open Sales Order List" },
-	{ key: "d", label: "Delivery Note", route: ["List", "Delivery Note"], description: "Open Delivery Note List" },
-	{ key: "r", label: "DSR", route: ["List", "DSR"], description: "Open DSR List" },
-	{ key: "b", label: "Stock Balance", route: ["query-report", "Stock Balance"], description: "Open Stock Balance" },
-	{ key: "l", label: "Stock Ledger", route: ["query-report", "Stock Ledger"], description: "Open Stock Ledger" },
-	{ key: "o", label: "Items Ordered in Date Range", route: ["query-report", "Items Ordered in Date Range"], description: "Open Items Ordered in Date Range" },
-	{ key: "m", label: "Items Sold in Date Range", route: ["query-report", "Items Sold in Date Range"], description: "Open Items Sold in Date Range" },
-	{ key: "f", label: "Production Planning Forecast", route: ["query-report", "Production Planning Forecast"], description: "Open Production Planning Forecast" },
+	{ key: "i", label: "Item", route: ["List", "Item"] },
+	{ key: "c", label: "Customer", route: ["List", "Customer"] },
+	{ key: "u", label: "Supplier", route: ["List", "Supplier"] },
+	{ key: "p", label: "Purchase Order", route: ["List", "Purchase Order"] },
+	{ key: "e", label: "Stock Entry", route: ["List", "Stock Entry"] },
+	{ key: "t", label: "Purchase Receipt", route: ["List", "Purchase Receipt"] },
+	{ key: "s", label: "Sales Order", route: ["List", "Sales Order"] },
+	{ key: "d", label: "Delivery Note", route: ["List", "Delivery Note"] },
+	{ key: "r", label: "DSR", route: ["List", "DSR"] },
+	{ key: "b", label: "Stock Balance", route: ["query-report", "Stock Balance"] },
+	{ key: "l", label: "Stock Ledger", route: ["query-report", "Stock Ledger"] },
+	{ key: "o", label: "Items Ordered in Date Range", route: ["query-report", "Items Ordered in Date Range"] },
+	{ key: "m", label: "Items Sold in Date Range", route: ["query-report", "Items Sold in Date Range"] },
+	{ key: "f", label: "Production Planning Forecast", route: ["query-report", "Production Planning Forecast"] },
 ];
 const shortcut_by_label = new Map(page_shortcuts.map((definition) => [definition.label, definition]));
+const shortcut_by_key = new Map(page_shortcuts.map((definition) => [definition.key, definition]));
 const SIDEBAR_KEYBOARD_CLASS = "srv-erp-sidebar-keyboard-active";
+const HOME_TITLE_CLASS = "srv-erp-home-title";
+const HOME_TITLE_HOST_CLASS = "srv-erp-home-title-host";
+const HOME_MASTER_TITLE_CLASS = "srv-erp-home-master-title";
 let sidebar_keyboard_anchor = null;
 
 export function decorate_home_shortcuts() {
@@ -49,13 +56,57 @@ export function decorate_home_shortcuts() {
 
 			const highlighted_letter = document.createElement("strong");
 			highlighted_letter.className = "srv-erp-shortcut-letter";
-			highlighted_letter.textContent = letter.toUpperCase();
+			highlighted_letter.textContent = letter;
 			return highlighted_letter;
 		});
 		title.replaceChildren(...fragments);
 		title.dataset.srvShortcutDecorated = "1";
 		widget.setAttribute("aria-keyshortcuts", definition.key.toUpperCase());
 	});
+}
+
+export function decorate_home_title() {
+	const existing_titles = [...document.querySelectorAll(`.${HOME_TITLE_CLASS}`)];
+	const existing_hosts = [...document.querySelectorAll(`.${HOME_TITLE_HOST_CLASS}`)];
+	if (!is_home_route()) {
+		existing_titles.forEach((title) => title.remove());
+		existing_hosts.forEach((host) => host.classList.remove(HOME_TITLE_HOST_CLASS));
+		return;
+	}
+
+	const page = get_visible_page_container();
+	existing_titles.filter((title) => !page.contains(title)).forEach((title) => title.remove());
+	const home_title = page.querySelector(".page-head .page-title .title-text");
+	const title_host = page.querySelector(".page-head .page-head-content");
+	const master_title = page.querySelector(`.${HOME_MASTER_TITLE_CLASS}`);
+	if (home_title?.textContent.trim() !== __("Home") || !title_host || !master_title) {
+		return;
+	}
+
+	let gateway_title = page.querySelector(`.${HOME_TITLE_CLASS}`);
+	if (!gateway_title) {
+		gateway_title = document.createElement("span");
+		gateway_title.className = `${HOME_TITLE_CLASS} h3`;
+		gateway_title.textContent = __("Gateway of Tally");
+	}
+
+	title_host.classList.add(HOME_TITLE_HOST_CLASS);
+	if (gateway_title.parentElement !== title_host) {
+		title_host.append(gateway_title);
+	}
+
+	const host_bounds = title_host.getBoundingClientRect();
+	const master_bounds = master_title.getBoundingClientRect();
+	const home_bounds = home_title.getBoundingClientRect();
+	const is_rtl = document.documentElement.dir === "rtl";
+	const master_inline_start = is_rtl
+		? host_bounds.right - master_bounds.right
+		: master_bounds.left - host_bounds.left;
+	const minimum_inline_start = is_rtl
+		? host_bounds.right - home_bounds.left + 16
+		: home_bounds.right - host_bounds.left + 16;
+	const inline_start = Math.max(master_inline_start, minimum_inline_start);
+	gateway_title.style.setProperty("--srv-erp-home-title-inline-start", `${Math.max(0, inline_start)}px`);
 }
 
 function get_workspace_sidebar_anchors() {
@@ -167,11 +218,8 @@ function is_home_route() {
 
 function should_native_ui_handle_escape() {
 	const focused_element = document.activeElement;
-	const is_editing = focused_element?.matches(
-		"input, select, textarea, [contenteditable=true]"
-	);
 	return Boolean(
-		is_editing ||
+		has_open_autocomplete(focused_element) ||
 		window.cur_dialog ||
 		document.querySelector(
 			".modal.show, .grid-row-open, .dropdown-menu.show, .dropdown.open, .see-ai-root.is-open"
@@ -196,12 +244,8 @@ export function handle_escape_navigation(event) {
 
 	const current_form_is_visible = window.cur_frm?.page?.wrapper?.is?.(":visible");
 	if (current_form_is_visible && window.cur_frm?.is_dirty?.()) {
-		event.preventDefault();
-		event.stopImmediatePropagation();
-		frappe.show_alert({
-			message: __("Save or discard the unsaved changes before going back."),
-			indicator: "orange",
-		});
+		consume_key(event);
+		show_unsaved_navigation_dialog(window.cur_frm);
 		return;
 	}
 
@@ -212,23 +256,28 @@ export function handle_escape_navigation(event) {
 	}
 }
 
-export function register_page_shortcuts() {
-	page_shortcuts.forEach(({ key, route, description }) => {
-		frappe.ui.keys.add_shortcut({
-			shortcut: key,
-			description: __(description),
-			condition: () => !is_dialog_open(),
-			action: (event) => {
-				const key_event = event?.originalEvent || event;
-				if (key_event?.altKey || key_event?.getModifierState?.("Alt") ||
-					key_event?.ctrlKey || key_event?.metaKey || key_event?.shiftKey) {
-					return false;
-				}
-				void frappe.set_route(...route);
-				return true;
-			},
-		});
-	});
+export function handle_page_shortcut(event) {
+	if (
+		event.repeat ||
+		event.altKey ||
+		event.ctrlKey ||
+		event.metaKey ||
+		event.shiftKey ||
+		is_dialog_open() ||
+		event.target?.closest?.("input, select, textarea, [contenteditable=true]")
+	) {
+		return false;
+	}
+
+	const definition = shortcut_by_key.get(event.key?.toLowerCase());
+	if (!definition) {
+		return false;
+	}
+
+	// Capture the event before Workspace's native A-Z Awesome Bar shortcuts run.
+	consume_key(event);
+	void frappe.set_route(...definition.route);
+	return true;
 }
 
 function get_user_menu_button() {
