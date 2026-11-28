@@ -35,6 +35,7 @@ app_include_css = [
 	"/assets/srv_erp/css/salesperson_home.css?v=20261121-14",
 ]
 app_include_js = [
+	"erp_shortcuts.bundle.js",
 	"/assets/srv_erp/js/home_collections.js?v=20261121-4",
 	"/assets/srv_erp/js/salesperson_home.js?v=20261123-1",
 	"/assets/srv_erp/js/sales_person_defaults.js",
