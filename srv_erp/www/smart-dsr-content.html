@@ -8,6 +8,7 @@
 {% if salesperson_home and not smart_dsr_embedded %}<div style="display:flex;justify-content:flex-end;padding:12px"><a class="button" href="/app/home" target="_top">Home</a></div>{% endif %}
 <div id="smart-dsr" aria-live="polite"><div class="skeleton">Loading your workday…</div></div>
 <script>window.smart_dsr_sales_home = {{ salesperson_home | tojson }}; window.smart_dsr_csrf = {{ smart_dsr_csrf_token | tojson }}; window.smart_dsr_user = {{ frappe.session.user | tojson }};</script>
+<script src="/assets/srv_erp/js/dialog_keyboard_core.js?v=20261128-1" defer></script>
 <script src="/assets/srv_erp/smart_dsr/overdues-page.js?v=20261121-5" defer></script>
 <script src="/assets/srv_erp/smart_dsr/expenses-page.js?v=20261121-3" defer></script>
 <script src="/assets/srv_erp/smart_dsr/party-items-page.js?v=20261121-8" defer></script>

@@ -1,12 +1,14 @@
-import { consume_key, has_open_autocomplete, is_visible } from "./shared.js";
+import { consume_key, has_open_autocomplete, is_alt_key, is_visible } from "./shared.js";
 
 const INPUTS = 'input:not([type="hidden"]), select, textarea, [contenteditable="true"]';
 const ACTIONS = 'button, a[href], input[type="checkbox"], input[type="radio"], .add-new-fields, .remove-field';
 const ARROWS = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
+const ACTIVE_CONTROL_CLASS = "srv-erp-grid-surface-keyboard-active";
 let settings_dialog = null;
 let column_picker = null;
 let expects_column_picker = false;
 let edited_row = null;
+let active_control = null;
 
 function current_dialog() {
 	return frappe.ui?.open_dialogs?.at(-1) || window.cur_dialog;
@@ -22,13 +24,17 @@ function can_focus(element) {
 
 function focus_control(element) {
 	if (!element) {
-		return;
+		return false;
 	}
+	active_control?.classList.remove(ACTIVE_CONTROL_CLASS);
 	if (element.tabIndex < 0 && !element.hasAttribute("tabindex")) {
 		element.setAttribute("tabindex", "-1");
 	}
+	active_control = element;
+	element.classList.add(ACTIVE_CONTROL_CLASS);
 	element.focus({ preventScroll: true });
 	element.scrollIntoView({ block: "nearest", inline: "nearest" });
+	return true;
 }
 
 function controls_for(scope, dialog) {
@@ -63,7 +69,55 @@ function focus_settings(dialog, preferred) {
 	}
 }
 
+function settings_rows(scope) {
+	return [...scope.querySelectorAll(".selected-fields .fields_order")].filter(is_visible);
+}
+
+function selected_settings_row(scope, target) {
+	const candidate = target?.closest?.(".fields_order") || active_control?.closest?.(".fields_order");
+	return candidate && scope.contains(candidate) && is_visible(candidate) ? candidate : null;
+}
+
+function remove_settings_row(scope, target) {
+	const rows = settings_rows(scope);
+	const row = selected_settings_row(scope, target);
+	const remove = row?.querySelector(".remove-field");
+	if (!row || !is_visible(remove)) {
+		return false;
+	}
+	const index = rows.indexOf(row);
+	remove.click();
+	window.requestAnimationFrame(() => {
+		const refreshed = settings_rows(scope);
+		const next_row = refreshed[Math.min(Math.max(index, 0), refreshed.length - 1)];
+		focus_control(next_row?.querySelector(".column-width") || scope.querySelector(".add-new-fields"));
+	});
+	return true;
+}
+
+export function decorate_grid_surface_hints() {
+	const modal = top_visible_modal();
+	if (!modal || !modal.querySelector(".selected-fields, .add-new-fields")) {
+		return;
+	}
+	for (const row of settings_rows(modal)) {
+		row.classList.add("srv-erp-grid-settings-row");
+		const remove = row.querySelector(".remove-field");
+		if (!remove || remove.querySelector(".srv-erp-grid-remove-shortcut-hint")) {
+			continue;
+		}
+		const hint = document.createElement("span");
+		hint.className = "srv-erp-grid-remove-shortcut-hint";
+		hint.textContent = "Alt+R";
+		hint.setAttribute("aria-hidden", "true");
+		remove.setAttribute("title", __("Remove selected row (Alt+R)"));
+		remove.appendChild(hint);
+	}
+}
+
 export function reset_grid_surfaces() {
+	active_control?.classList.remove(ACTIVE_CONTROL_CLASS);
+	active_control = null;
 	settings_dialog = null;
 	column_picker = null;
 	expects_column_picker = false;
@@ -199,6 +253,17 @@ export function handle_grid_surface_keys(event) {
 		return false;
 	}
 
+	if (dialog_surface?.settings && is_alt_key(event, "KeyR")) {
+		if (event.repeat) {
+			consume_key(event);
+			return true;
+		}
+		if (!remove_settings_row(scope, event.target)) {
+			return false;
+		}
+		consume_key(event);
+		return true;
+	}
 	if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
 		return false;
 	}

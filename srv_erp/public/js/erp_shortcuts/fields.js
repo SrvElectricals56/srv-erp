@@ -49,12 +49,30 @@ export function focus_first_field(frm, tab, section = null) {
 	const controls = section
 		? get_section_controls(frm, section)
 		: get_form_controls(frm, tab).filter(is_visible);
-	const input = controls.find((control) => control.matches('input, select, textarea, [contenteditable="true"]')) ||
-		controls[0] || get_navigation_targets(frm, tab, section)[0];
+	const targets = get_navigation_targets(frm, tab, section);
+	const field = controls.find((control) =>
+		control.matches('input, select, textarea, [contenteditable="true"]')
+	) || controls[0];
+	const first_content_target = targets.find((target) => !target.matches(".section-head"));
+	const input = first_content_target || field || targets[0];
 	if (input) {
 		focus_form_input(input, section);
 	}
 	return input;
+}
+
+export function focus_field_before_heading(frm, tab, heading, from_end = false) {
+	const targets = get_navigation_targets(frm, tab);
+	const boundary = targets.indexOf(heading);
+	if (boundary <= 0) {
+		return null;
+	}
+	const fields = targets.slice(0, boundary).filter((target) => !target.matches(".section-head"));
+	const input = from_end ? fields.at(-1) : fields[0];
+	if (input) {
+		focus_form_input(input, null);
+	}
+	return input || null;
 }
 
 export function focus_named_field(field) {
@@ -90,6 +108,20 @@ function focus_form_input(input, section) {
 	if (input.matches('input[type="text"], input[type="search"], textarea')) {
 		input.select();
 	}
+}
+
+function return_to_section_heading(input, section) {
+	const heading = section?.head?.get?.(0) ||
+		input?.closest?.(".form-section, .form-dashboard-section")?.querySelector(":scope > .section-head");
+	input?.blur?.();
+	if (!heading || !is_visible(heading)) {
+		return;
+	}
+	if (!heading.hasAttribute("tabindex")) {
+		heading.setAttribute("tabindex", "-1");
+	}
+	heading.focus({ preventScroll: true });
+	heading.scrollIntoView({ block: "center", inline: "nearest" });
 }
 
 function find_horizontal_form_input(inputs, current_input, direction) {
@@ -132,7 +164,7 @@ function get_navigation_targets(frm, tab, section = null) {
 			continue;
 		}
 		const heading = field.section?.head?.get?.(0);
-		if (heading && (field.section.is_collapsed?.() || heading === selected_input)) {
+		if (!section && heading) {
 			targets.add(heading);
 		}
 		const grid = field.grid?.wrapper?.get?.(0);
@@ -168,7 +200,7 @@ function scroll_at_field_boundary(input, direction) {
 	window.scrollBy({ top: direction * Math.round(window.innerHeight * 0.65) });
 }
 
-export function handle_field_keys(event, frm, tab) {
+export function handle_field_keys(event, frm, tab, select_heading) {
 	if (event.isComposing || is_dialog_open() || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
 		return;
 	}
@@ -190,9 +222,11 @@ export function handle_field_keys(event, frm, tab) {
 		return;
 	}
 	if (event.key === "Escape") {
+		const return_section = selected_section;
 		reset_field_navigation();
 		if (!has_open_autocomplete(target)) {
 			consume_key(event);
+			return_to_section_heading(target, return_section);
 		}
 		return;
 	}
@@ -217,8 +251,14 @@ export function handle_field_keys(event, frm, tab) {
 	consume_key(event);
 	const horizontal = event.key === "ArrowLeft" || event.key === "ArrowRight";
 	const direction = ["ArrowDown", "ArrowRight"].includes(event.key) ? 1 : -1;
-	const next = (horizontal && find_horizontal_form_input(inputs, target, direction)) || inputs[index + direction];
+	const next = horizontal
+		? find_horizontal_form_input(inputs, target, direction)
+		: inputs[index + direction];
 	if (next) {
+		if (!horizontal && next.matches(".section-head.collapsible") && select_heading?.(next)) {
+			reset_field_navigation();
+			return;
+		}
 		focus_form_input(next, selected_section);
 	} else if (!horizontal) {
 		scroll_at_field_boundary(target, direction);

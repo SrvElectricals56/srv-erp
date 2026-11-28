@@ -11,6 +11,7 @@
 {% block page_content %}
 <div id="dsr-admin"><p class="loading">Loading Administrator Control Panel…</p></div>
 <script>window.dsr_admin_csrf = {{ smart_dsr_csrf_token | tojson }};</script>
+<script src="/assets/srv_erp/js/dialog_keyboard_core.js?v=20261128-1" defer></script>
 <script src="/assets/frappe/js/lib/leaflet/leaflet.js" defer></script>
 <script src="/assets/srv_erp/smart_dsr/route-map.js?v=short-dates-20261120" defer></script>
 <script src="/assets/srv_erp/smart_dsr/admin.js?v=desk-admin-20261123-1" defer></script>

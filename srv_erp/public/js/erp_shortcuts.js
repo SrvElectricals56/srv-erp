@@ -1,16 +1,20 @@
 import {
-	clear_sidebar_keyboard_selection, decorate_home_shortcuts, decorate_user_menu_hint, focus_home_sidebar_item, handle_escape_navigation,
-	handle_sidebar_keyboard, handle_user_menu_shortcut, register_page_shortcuts, register_profile_shortcut,
+	clear_sidebar_keyboard_selection, decorate_home_shortcuts, decorate_home_title, decorate_user_menu_hint, focus_home_sidebar_item, handle_escape_navigation,
+	handle_page_shortcut, handle_sidebar_keyboard, handle_user_menu_shortcut, register_profile_shortcut,
 } from "./erp_shortcuts/desk.js";
-import { decorate_current_form, handle_form_keyboard, reset_form_navigation } from "./erp_shortcuts/form.js";
+import { decorate_global_action_hints, handle_global_action_keyboard } from "./erp_shortcuts/dialog.js";
+import {
+	decorate_current_form, handle_form_keyboard, reset_form_navigation, return_to_parent_heading,
+} from "./erp_shortcuts/form.js";
 import { get_active_grid, handle_grid_keyboard, register_grid_settings_shortcut, reset_grid_navigation, track_grid_pointer } from "./erp_shortcuts/grid.js";
 import { decorate_grid_hints } from "./erp_shortcuts/grid_hints.js";
-import { bind_grid_settings_events } from "./erp_shortcuts/grid_surfaces.js";
+import { bind_grid_settings_events, decorate_grid_surface_hints } from "./erp_shortcuts/grid_surfaces.js";
+import { initialize_keyboard_label_visibility } from "./erp_shortcuts/keyboard_presence.js";
 import {
 	decorate_list_filter_shortcuts, decorate_list_primary_action_shortcut, handle_list_filter_keyboard,
 	handle_list_primary_action_keyboard, schedule_route_search_cleanup,
 } from "./erp_shortcuts/list.js";
-import { handle_page_keyboard, reset_page_navigation } from "./erp_shortcuts/page_navigation.js";
+import { handle_page_keyboard, reset_page_navigation, track_list_pointer } from "./erp_shortcuts/page_navigation.js";
 import { add_item_to_sales_order, create_item } from "./erp_shortcuts/quick_entry.js";
 import { consume_key, is_alt_key, is_dialog_open } from "./erp_shortcuts/shared.js";
 import { inject_shortcut_styles } from "./erp_shortcuts/styles.js";
@@ -24,8 +28,11 @@ function schedule_decoration() {
 	decoration_frame = window.requestAnimationFrame(() => {
 		decoration_frame = null;
 		decorate_home_shortcuts();
+		decorate_home_title();
 		decorate_user_menu_hint();
+		decorate_global_action_hints();
 		decorate_grid_hints(get_active_grid(document.activeElement));
+		decorate_grid_surface_hints();
 		decorate_list_filter_shortcuts();
 		decorate_list_primary_action_shortcut();
 		decorate_current_form();
@@ -34,6 +41,16 @@ function schedule_decoration() {
 
 function handle_keyboard(event) {
 	if (event.defaultPrevented || event.isComposing) {
+		return;
+	}
+	if (handle_global_action_keyboard(event)) {
+		return;
+	}
+	if (handle_page_shortcut(event)) {
+		return;
+	}
+	if (return_to_parent_heading(event)) {
+		reset_grid_navigation();
 		return;
 	}
 	const form_tab_shortcut = is_alt_key(event, "KeyM");
@@ -75,17 +92,19 @@ function register_shortcuts() {
 		return false;
 	}
 
-	register_page_shortcuts();
 	window.addEventListener("keydown", handle_user_menu_shortcut, true);
 	register_profile_shortcut();
 	register_grid_settings_shortcut();
+	initialize_keyboard_label_visibility();
 	inject_shortcut_styles();
 	schedule_decoration();
 	new MutationObserver(schedule_decoration).observe(document.body, { childList: true, subtree: true });
 	document.addEventListener("keydown", handle_keyboard, true);
+	window.addEventListener("resize", schedule_decoration);
 	document.addEventListener("focusin", schedule_decoration);
 	bind_grid_settings_events();
 	document.addEventListener("pointerdown", (event) => {
+		track_list_pointer(event);
 		reset_form_navigation();
 		track_grid_pointer(event);
 		reset_page_navigation();
@@ -94,7 +113,7 @@ function register_shortcuts() {
 	frappe.router?.on?.("change", () => {
 		reset_form_navigation();
 		reset_grid_navigation();
-		reset_page_navigation();
+		reset_page_navigation(true);
 		clear_sidebar_keyboard_selection();
 		schedule_route_search_cleanup();
 		schedule_decoration();
