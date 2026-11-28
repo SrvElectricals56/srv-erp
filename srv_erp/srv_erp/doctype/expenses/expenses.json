@@ -1,0 +1,38 @@
+{
+ "actions": [],
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "exp_name",
+  "exp_type",
+  "exp_amount"
+ ],
+ "fields": [
+  {
+   "fieldname": "exp_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Exp. Name"
+  },
+  {
+   "fieldname": "exp_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Exp. Type",
+   "options": "Raw Material\nGeneral\nMachine\nIn Person exp\nOthers"
+  },
+  {
+   "fieldname": "exp_amount",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Exp. Amount"
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "module": "Srv Erp",
+ "name": "Expenses",
+ "permissions": [],
+ "states": []
+}
